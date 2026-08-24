@@ -1,0 +1,2220 @@
+/* =========================================================
+   VOXSHIELD AI
+   Premium Dark Blue UI
+   Mobile + Tablet First
+========================================================= */
+
+
+/* =========================
+   VARIABLES
+========================= */
+
+:root {
+
+    --navy: #0f172a;
+    --dark: #020617;
+
+    --blue: #3b82f6;
+    --blue-light: #60a5fa;
+    --blue-dark: #1d4ed8;
+
+    --red: #ef4444;
+    --green: #22c55e;
+    --orange: #f59e0b;
+
+    --white: #f8fafc;
+    --text: #cbd5e1;
+    --muted: #64748b;
+
+    --border:
+        rgba(96, 165, 250, 0.15);
+
+    --card:
+        rgba(15, 23, 42, 0.72);
+}
+
+
+/* =========================
+   RESET
+========================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+html {
+    scroll-behavior: smooth;
+}
+
+
+body {
+
+    font-family:
+        Inter,
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    color: var(--text);
+
+    background:
+
+        radial-gradient(
+            circle at 50% -10%,
+            rgba(37, 99, 235, 0.22),
+            transparent 35%
+        ),
+
+        radial-gradient(
+            circle at 100% 40%,
+            rgba(30, 64, 175, 0.1),
+            transparent 30%
+        ),
+
+        linear-gradient(
+            180deg,
+            #020617 0%,
+            #0f172a 50%,
+            #020617 100%
+        );
+
+    min-height: 100vh;
+
+    overflow-x: hidden;
+}
+
+
+/* subtle grid */
+
+body::before {
+
+    content: "";
+
+    position: fixed;
+
+    inset: 0;
+
+    pointer-events: none;
+
+    background-image:
+
+        linear-gradient(
+            rgba(255,255,255,0.012) 1px,
+            transparent 1px
+        ),
+
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,0.012) 1px,
+            transparent 1px
+        );
+
+    background-size: 40px 40px;
+
+    z-index: -1;
+}
+
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+
+
+button {
+    cursor: pointer;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+header {
+
+    position: sticky;
+
+    top: 0;
+
+    z-index: 1000;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    width: 100%;
+
+    padding: 15px 18px;
+
+    background:
+        rgba(2, 6, 23, 0.82);
+
+    backdrop-filter: blur(20px);
+
+    -webkit-backdrop-filter: blur(20px);
+
+    border-bottom:
+        1px solid var(--border);
+}
+
+
+.logo {
+
+    color: white;
+
+    font-size: 1.05rem;
+
+    font-weight: 800;
+
+    white-space: nowrap;
+}
+
+
+nav {
+
+    display: flex;
+
+    gap: 15px;
+
+    max-width: 65%;
+
+    overflow-x: auto;
+
+    scrollbar-width: none;
+}
+
+
+nav::-webkit-scrollbar {
+    display: none;
+}
+
+
+nav a {
+
+    color: #64748b;
+
+    font-size: 0.74rem;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+
+    transition: 0.2s ease;
+}
+
+
+nav a:hover {
+    color: white;
+}
+
+
+/* =========================
+   GENERAL
+========================= */
+
+section {
+
+    width: min(100%, 1100px);
+
+    margin: auto;
+
+    padding: 85px 20px;
+}
+
+
+h1,
+h2,
+h3 {
+    color: white;
+}
+
+
+h1 {
+
+    font-size:
+        clamp(
+            3rem,
+            12vw,
+            5rem
+        );
+
+    line-height: 0.95;
+
+    letter-spacing: -0.055em;
+}
+
+
+h2 {
+
+    font-size:
+        clamp(
+            1.8rem,
+            7vw,
+            3rem
+        );
+
+    margin-bottom: 15px;
+
+    letter-spacing: -0.035em;
+}
+
+
+h3 {
+    margin-bottom: 8px;
+}
+
+
+p {
+    color: var(--muted);
+}
+
+
+/* =========================
+   HERO
+========================= */
+
+#home {
+
+    min-height: 90vh;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    align-items: flex-start;
+
+    position: relative;
+
+    overflow: hidden;
+}
+
+
+#home::before {
+
+    content: "";
+
+    position: absolute;
+
+    width: 300px;
+    height: 300px;
+
+    right: -120px;
+    top: 50px;
+
+    background: var(--blue);
+
+    opacity: 0.13;
+
+    border-radius: 50%;
+
+    filter: blur(100px);
+
+    pointer-events: none;
+}
+
+
+#home::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 200px;
+    height: 200px;
+
+    left: -100px;
+    bottom: 30px;
+
+    background: #1d4ed8;
+
+    opacity: 0.1;
+
+    border-radius: 50%;
+
+    filter: blur(90px);
+
+    pointer-events: none;
+}
+
+
+/* =========================
+   HERO LOGO
+========================= */
+
+.hero-logo {
+
+    margin-bottom: 25px;
+
+    position: relative;
+
+    z-index: 2;
+}
+
+
+.hero-logo img {
+
+    display: block;
+
+    width: 190px;
+
+    max-width: 70vw;
+
+    height: auto;
+
+    filter:
+
+        drop-shadow(
+            0 0 25px
+            rgba(59, 130, 246, 0.3)
+        );
+}
+
+
+/* =========================
+   HERO LABEL
+========================= */
+
+.hero-label {
+
+    display: inline-block;
+
+    padding: 7px 11px;
+
+    color: #93c5fd;
+
+    background:
+        rgba(59, 130, 246, 0.08);
+
+    border:
+        1px solid
+        rgba(59, 130, 246, 0.2);
+
+    border-radius: 50px;
+
+    font-size: 0.65rem;
+
+    font-weight: 800;
+
+    letter-spacing: 0.14em;
+}
+
+
+/* =========================
+   HERO HEADING
+========================= */
+
+#home h1 {
+
+    margin-top: 18px;
+
+    max-width: 700px;
+
+    background:
+
+        linear-gradient(
+            135deg,
+            #ffffff 20%,
+            #93c5fd 90%
+        );
+
+    -webkit-background-clip: text;
+
+    background-clip: text;
+
+    color: transparent;
+}
+
+
+#home h1 span {
+    color: var(--blue-light);
+}
+
+
+/* =========================
+   HERO DESCRIPTION
+========================= */
+
+.hero-description {
+
+    max-width: 590px;
+
+    margin-top: 22px;
+
+    font-size: 1rem;
+
+    line-height: 1.8;
+}
+
+
+/* =========================
+   HERO BUTTONS
+========================= */
+
+.hero-buttons {
+
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 12px;
+
+    margin-top: 30px;
+}
+
+
+#home .hero-buttons a {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    padding: 13px 20px;
+
+    border-radius: 11px;
+
+    font-size: 0.86rem;
+
+    font-weight: 750;
+
+    transition: 0.25s ease;
+}
+
+
+#home .hero-buttons a:first-child {
+
+    color: white;
+
+    background:
+
+        linear-gradient(
+            135deg,
+            #3b82f6,
+            #2563eb
+        );
+
+    box-shadow:
+
+        0 10px 30px
+        rgba(37, 99, 235, 0.3);
+}
+
+
+#home .hero-buttons a:first-child:hover {
+
+    transform: translateY(-3px);
+
+    box-shadow:
+
+        0 15px 40px
+        rgba(37, 99, 235, 0.45);
+}
+
+
+#home .hero-buttons a:nth-child(2) {
+
+    color: #bfdbfe;
+
+    background:
+        rgba(15, 23, 42, 0.7);
+
+    border:
+        1px solid
+        rgba(96, 165, 250, 0.25);
+}
+
+
+#home .hero-buttons a:nth-child(2):hover {
+
+    transform: translateY(-3px);
+
+    border-color: var(--blue);
+}
+
+
+/* =========================
+   TRUST LINE
+========================= */
+
+.trust-line {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    margin-top: 20px;
+
+    color: #64748b;
+
+    font-size: 0.75rem;
+}
+
+
+.status-dot {
+
+    width: 7px;
+
+    height: 7px;
+
+    display: inline-block;
+
+    border-radius: 50%;
+
+    background: var(--green);
+
+    box-shadow:
+
+        0 0 10px
+        rgba(34, 197, 94, 0.8);
+}
+
+
+/* =========================
+   CARDS
+========================= */
+
+article,
+#detect > div,
+#live > div,
+#blacklist > div,
+#call > div,
+#about,
+#contact {
+
+    background:
+
+        linear-gradient(
+            145deg,
+            rgba(15, 23, 42, 0.8),
+            rgba(2, 6, 23, 0.72)
+        );
+
+    border:
+        1px solid var(--border);
+
+    border-radius: 20px;
+
+    padding: 24px;
+
+    backdrop-filter: blur(15px);
+
+    box-shadow:
+
+        0 20px 50px
+        rgba(0, 0, 0, 0.25);
+
+    margin-top: 20px;
+}
+
+
+/* =========================
+   WHY
+========================= */
+
+#why {
+    text-align: center;
+}
+
+
+#why > article {
+    text-align: left;
+}
+
+
+#why > article:hover {
+
+    transform: translateY(-4px);
+
+    border-color:
+        rgba(59, 130, 246, 0.3);
+}
+
+
+/* =========================
+   BUTTONS
+========================= */
+
+button {
+
+    padding: 12px 18px;
+
+    border: 1px solid
+        rgba(96, 165, 250, 0.18);
+
+    border-radius: 10px;
+
+    color: white;
+
+    background:
+
+        linear-gradient(
+            135deg,
+            #3b82f6,
+            #2563eb
+        );
+
+    font-weight: 700;
+
+    transition: 0.2s ease;
+}
+
+
+button:hover {
+
+    transform: translateY(-2px);
+
+    box-shadow:
+
+        0 10px 25px
+        rgba(37, 99, 235, 0.3);
+}
+
+
+button:disabled {
+
+    opacity: 0.45;
+
+    cursor: not-allowed;
+
+    transform: none;
+}
+
+
+/* =========================
+   INPUTS
+========================= */
+
+input,
+select,
+textarea {
+
+    width: 100%;
+
+    padding: 13px 14px;
+
+    color: #e2e8f0;
+
+    background:
+        rgba(2, 6, 23, 0.7);
+
+    border:
+        1px solid #1e293b;
+
+    border-radius: 10px;
+
+    outline: none;
+}
+
+
+input:focus,
+select:focus,
+textarea:focus {
+
+    border-color: var(--blue);
+
+    box-shadow:
+
+        0 0 0 3px
+        rgba(59, 130, 246, 0.08);
+}
+
+
+textarea {
+    resize: vertical;
+}
+
+
+/* =========================
+   DETECTION
+========================= */
+
+#detect {
+    text-align: center;
+}
+
+
+#detect form {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+
+    margin-top: 25px;
+}
+
+
+input[type="file"] {
+
+    padding: 17px;
+
+    color: #64748b;
+
+    background:
+        rgba(2, 6, 23, 0.6);
+
+    border:
+        1px dashed
+        rgba(59, 130, 246, 0.4);
+}
+
+
+audio {
+
+    width: 100%;
+
+    margin-top: 12px;
+}
+
+
+/* =========================
+   SPECTROGRAM
+========================= */
+
+#detect > div:nth-of-type(2) > div {
+
+    min-height: 180px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    position: relative;
+
+    overflow: hidden;
+
+    margin-top: 15px;
+
+    border-radius: 15px;
+
+    background:
+
+        repeating-linear-gradient(
+            90deg,
+            #0f172a 0px,
+            #1d4ed8 7px,
+            #172554 14px,
+            #0f172a 21px
+        );
+}
+
+
+#detect > div:nth-of-type(2) > div::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 100%;
+
+    height: 2px;
+
+    background: #60a5fa;
+
+    box-shadow:
+        0 0 15px #3b82f6;
+
+    animation:
+        spectrogramScan 3s linear infinite;
+}
+
+
+@keyframes spectrogramScan {
+
+    from {
+        top: 0;
+    }
+
+    to {
+        top: 100%;
+    }
+
+}
+
+
+/* =========================
+   RESULT
+========================= */
+
+#detect > div:nth-of-type(3) strong {
+
+    display: inline-block;
+
+    padding: 9px 20px;
+
+    margin: 12px 0;
+
+    border-radius: 50px;
+
+    color: var(--green);
+
+    background:
+        rgba(34, 197, 94, 0.08);
+
+    border:
+        1px solid
+        rgba(34, 197, 94, 0.3);
+
+    font-size: 1.1rem;
+
+    letter-spacing: 0.08em;
+}
+
+
+/* =========================
+   LIVE MIC
+========================= */
+
+#live {
+    text-align: center;
+}
+
+
+#live > div {
+    margin-top: 20px;
+}
+
+
+#live button {
+    margin: 5px;
+}
+
+
+#live > div:nth-of-type(2) > div {
+
+    min-height: 100px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    overflow: hidden;
+
+    padding: 20px;
+
+    color: #60a5fa;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(37, 99, 235, 0.12),
+            rgba(2, 6, 23, 0.8)
+        );
+
+    border-radius: 15px;
+
+    font-size: 1.3rem;
+
+    letter-spacing: 3px;
+
+    text-shadow:
+        0 0 15px
+        rgba(59, 130, 246, 0.8);
+}
+
+
+/* =========================
+   CONFIDENCE
+========================= */
+
+progress {
+
+    width: 100%;
+
+    height: 13px;
+
+    margin: 15px 0;
+
+    accent-color: var(--blue);
+}
+
+
+/* =========================
+   BLACKLIST
+========================= */
+
+#blacklist {
+    text-align: center;
+}
+
+
+#blacklist form {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+
+    margin-top: 18px;
+}
+
+
+#blacklist > div {
+    text-align: left;
+}
+
+
+/* =========================
+   TABLE
+========================= */
+
+#blacklist > div:nth-of-type(3) {
+
+    overflow-x: auto;
+}
+
+
+table {
+
+    width: 100%;
+
+    min-width: 600px;
+
+    margin-top: 18px;
+
+    border-collapse: collapse;
+}
+
+
+th,
+td {
+
+    padding: 14px;
+
+    border-bottom:
+        1px solid
+        rgba(148, 163, 184, 0.08);
+
+    text-align: left;
+}
+
+
+th {
+
+    color: #60a5fa;
+
+    font-size: 0.7rem;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.08em;
+}
+
+
+td {
+
+    color: #cbd5e1;
+
+    font-size: 0.8rem;
+}
+
+
+tbody tr:hover {
+
+    background:
+        rgba(59, 130, 246, 0.04);
+}
+
+
+/* =========================
+   RISK COLORS
+========================= */
+
+td:nth-child(2) {
+
+    font-weight: 800;
+}
+
+
+td:nth-child(2) {
+
+    color: var(--red);
+}
+
+
+tbody tr:nth-child(2)
+td:nth-child(2) {
+
+    color: var(--orange);
+}
+
+
+tbody tr:nth-child(3)
+td:nth-child(2) {
+
+    color: var(--green);
+}
+
+
+/* =========================
+   CALL SCREEN
+========================= */
+
+#call {
+    text-align: center;
+}
+
+
+#call > div:first-of-type {
+
+    max-width: 380px;
+
+    margin: 30px auto;
+
+    padding: 35px 20px;
+
+    border-radius: 30px;
+
+    background:
+
+        radial-gradient(
+            circle at top,
+            #172554,
+            #020617
+        );
+
+    border:
+        1px solid
+        rgba(59, 130, 246, 0.2);
+
+    box-shadow:
+
+        0 25px 70px
+        rgba(0, 0, 0, 0.5);
+}
+
+
+#call > div:first-of-type::before {
+
+    content: "☎";
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 70px;
+
+    height: 70px;
+
+    margin: 0 auto 18px;
+
+    color: #bfdbfe;
+
+    background:
+        rgba(59, 130, 246, 0.12);
+
+    border:
+        1px solid
+        rgba(59, 130, 246, 0.25);
+
+    border-radius: 50%;
+
+    font-size: 1.5rem;
+}
+
+
+#call > div:first-of-type > div {
+
+    margin: 22px 0;
+
+    padding: 17px;
+
+    border-radius: 15px;
+
+    background:
+        rgba(239, 68, 68, 0.08);
+
+    border:
+        1px solid
+        rgba(239, 68, 68, 0.3);
+}
+
+
+#call strong {
+    color: var(--red);
+}
+
+
+#call > div:first-of-type button:first-of-type {
+
+    background:
+        linear-gradient(
+            135deg,
+            #dc2626,
+            #991b1b
+        );
+}
+
+
+#call > div:first-of-type button:nth-of-type(2) {
+
+    background:
+        linear-gradient(
+            135deg,
+            #22c55e,
+            #15803d
+        );
+}
+
+
+/* =========================
+   HOW IT WORKS
+========================= */
+
+#how-it-works {
+    text-align: center;
+}
+
+
+#how-it-works article {
+    text-align: left;
+}
+
+
+#how-it-works article h3 {
+    color: var(--blue-light);
+}
+
+
+/* =========================
+   ABOUT
+========================= */
+
+#about {
+    text-align: center;
+}
+
+
+#about p {
+
+    max-width: 700px;
+
+    margin:
+        12px auto;
+
+    line-height: 1.8;
+}
+
+
+/* =========================
+   CONTACT
+========================= */
+
+#contact {
+    text-align: center;
+}
+
+
+#contact form {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+
+    margin-top: 20px;
+
+    text-align: left;
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+footer {
+
+    padding:
+        50px 20px 30px;
+
+    text-align: center;
+
+    background:
+        linear-gradient(
+            180deg,
+            transparent,
+            #020617
+        );
+
+    border-top:
+        1px solid
+        rgba(96, 165, 250, 0.1);
+}
+
+
+footer h3 {
+    color: white;
+}
+
+
+footer p {
+    margin-top: 8px;
+}
+
+
+footer > div:nth-of-type(2) {
+
+    display: flex;
+
+    justify-content: center;
+
+    flex-wrap: wrap;
+
+    gap: 18px;
+
+    margin: 25px 0;
+}
+
+
+footer a {
+
+    color: #64748b;
+
+    font-size: 0.85rem;
+
+    transition: 0.2s ease;
+}
+
+
+footer a:hover {
+    color: var(--blue-light);
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 599px) {
+
+    header {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 10px;
+    }
+
+
+    nav {
+
+        width: 100%;
+
+        max-width: 100%;
+    }
+
+
+    section {
+
+        padding:
+            70px 16px;
+    }
+
+
+    #home {
+
+        min-height: 85vh;
+    }
+
+
+    .hero-logo img {
+
+        width: 160px;
+    }
+
+
+    #home h1 {
+
+        font-size:
+            clamp(
+                3rem,
+                15vw,
+                4.5rem
+            );
+    }
+
+
+    .hero-buttons {
+
+        width: 100%;
+    }
+
+
+    #home .hero-buttons a {
+
+        width: 100%;
+
+        text-align: center;
+    }
+
+
+    article,
+    #detect > div,
+    #live > div,
+    #blacklist > div,
+    #call > div,
+    #about,
+    #contact {
+
+        padding: 20px;
+
+        border-radius: 17px;
+    }
+
+}
+
+
+/* =========================
+   TABLET
+========================= */
+
+@media (min-width: 600px) {
+
+    section {
+
+        padding:
+            100px 40px;
+    }
+
+
+    #why {
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, 1fr);
+
+        gap: 20px;
+
+        text-align: left;
+    }
+
+
+    #why > h2,
+    #why > p {
+
+        grid-column:
+            1 / -1;
+
+        text-align: center;
+    }
+
+
+    #why > article {
+
+        margin-top: 0;
+    }
+
+}
+
+
+/* =========================
+   LARGE TABLET
+========================= */
+
+@media (min-width: 900px) {
+
+    header {
+
+        padding:
+            17px 45px;
+    }
+
+
+    nav {
+
+        gap: 25px;
+    }
+
+
+    section {
+
+        padding:
+            110px 50px;
+    }
+
+
+    #why {
+
+        grid-template-columns:
+            repeat(3, 1fr);
+    }
+
+}
+
+
+/* =========================
+   ACCESSIBILITY
+========================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+
+        animation-duration:
+            0.01ms !important;
+
+        transition:
+            none !important;
+
+        scroll-behavior:
+            auto !important;
+    }
+
+}
+
+/* =========================================================
+   VOXSHIELD AI — CALLER BLACKLIST PAGE
+========================================================= */
+
+
+/* =========================
+   BLACKLIST PAGE
+========================= */
+
+#blacklist-page {
+    width: min(100%, 1000px);
+    margin: auto;
+    padding-top: 90px;
+    padding-bottom: 100px;
+}
+
+
+/* =========================
+   PAGE HEADING
+========================= */
+
+.blacklist-heading {
+    text-align: center;
+    margin-bottom: 45px;
+}
+
+.blacklist-heading > span {
+    display: inline-block;
+
+    padding: 7px 11px;
+
+    color: #60a5fa;
+
+    background:
+        rgba(59, 130, 246, 0.08);
+
+    border:
+        1px solid
+        rgba(59, 130, 246, 0.2);
+
+    border-radius: 50px;
+
+    font-size: 0.65rem;
+    font-weight: 800;
+
+    letter-spacing: 0.14em;
+}
+
+.blacklist-heading h1 {
+    margin-top: 18px;
+
+    color: #f8fafc;
+
+    font-size:
+        clamp(
+            3rem,
+            10vw,
+            5rem
+        );
+
+    line-height: 0.95;
+
+    letter-spacing: -0.055em;
+}
+
+.blacklist-heading h1 strong {
+    color: #60a5fa;
+}
+
+.blacklist-heading p {
+    max-width: 620px;
+
+    margin: 20px auto 0;
+
+    color: #64748b;
+
+    line-height: 1.8;
+
+    font-size: 0.95rem;
+}
+
+
+/* =========================
+   BLACKLIST CARDS
+========================= */
+
+.blacklist-card {
+
+    position: relative;
+
+    margin-bottom: 22px;
+
+    padding: 25px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(15, 23, 42, 0.82),
+            rgba(2, 6, 23, 0.72)
+        );
+
+    border:
+        1px solid
+        rgba(96, 165, 250, 0.15);
+
+    border-radius: 21px;
+
+    box-shadow:
+        0 20px 55px
+        rgba(0, 0, 0, 0.28);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    transition:
+        border-color 0.25s ease,
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.blacklist-card:hover {
+
+    border-color:
+        rgba(59, 130, 246, 0.3);
+
+    box-shadow:
+        0 25px 65px
+        rgba(0, 0, 0, 0.35);
+}
+
+
+/* =========================
+   CARD HEADINGS
+========================= */
+
+.blacklist-card h2 {
+
+    margin-bottom: 7px;
+
+    color: #f8fafc;
+
+    font-size: 1.35rem;
+
+    letter-spacing: -0.02em;
+}
+
+.blacklist-card > p {
+
+    margin-bottom: 20px;
+
+    color: #64748b;
+
+    font-size: 0.8rem;
+
+    line-height: 1.6;
+}
+
+
+/* =========================
+   FORMS
+========================= */
+
+.blacklist-card form {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 12px;
+}
+
+
+.blacklist-card input,
+.blacklist-card select,
+.blacklist-card textarea {
+
+    width: 100%;
+
+    padding: 14px 15px;
+
+    color: #e2e8f0;
+
+    background:
+        rgba(2, 6, 23, 0.75);
+
+    border:
+        1px solid
+        #1e293b;
+
+    border-radius: 11px;
+
+    outline: none;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+.blacklist-card input::placeholder,
+.blacklist-card textarea::placeholder {
+
+    color: #475569;
+}
+
+
+.blacklist-card input:focus,
+.blacklist-card select:focus,
+.blacklist-card textarea:focus {
+
+    border-color:
+        #3b82f6;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(59, 130, 246, 0.09);
+}
+
+
+.blacklist-card textarea {
+
+    min-height: 120px;
+
+    resize: vertical;
+}
+
+
+/* =========================
+   FORM BUTTON
+========================= */
+
+.blacklist-card form button {
+
+    width: 100%;
+
+    padding: 13px 18px;
+
+    color: white;
+
+    background:
+        linear-gradient(
+            135deg,
+            #3b82f6,
+            #2563eb
+        );
+
+    border:
+        1px solid
+        rgba(147, 197, 253, 0.12);
+
+    border-radius: 11px;
+
+    font-weight: 750;
+
+    box-shadow:
+        0 8px 25px
+        rgba(37, 99, 235, 0.2);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+
+.blacklist-card form button:hover {
+
+    transform:
+        translateY(-2px);
+
+    box-shadow:
+        0 12px 30px
+        rgba(37, 99, 235, 0.35);
+}
+
+
+/* =========================
+   SEARCH RESULT
+========================= */
+
+.search-result {
+
+    display: none;
+
+    margin-top: 15px;
+
+    padding: 15px;
+
+    background:
+        rgba(59, 130, 246, 0.05);
+
+    border:
+        1px solid
+        rgba(59, 130, 246, 0.15);
+
+    border-radius: 12px;
+
+    color: #cbd5e1;
+
+    font-size: 0.78rem;
+}
+
+
+/* =========================
+   TABLE HEADING
+========================= */
+
+.table-heading {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 15px;
+}
+
+
+.table-heading h2 {
+    margin-bottom: 5px;
+}
+
+
+.table-heading p {
+    margin: 0;
+
+    font-size: 0.75rem;
+}
+
+
+.table-heading > span {
+
+    flex-shrink: 0;
+
+    padding: 6px 9px;
+
+    color: #60a5fa;
+
+    background:
+        rgba(59, 130, 246, 0.08);
+
+    border:
+        1px solid
+        rgba(59, 130, 246, 0.16);
+
+    border-radius: 6px;
+
+    font-size: 0.55rem;
+
+    font-weight: 800;
+
+    letter-spacing: 0.08em;
+}
+
+
+/* =========================
+   TABLE
+========================= */
+
+.table-wrapper {
+
+    width: 100%;
+
+    overflow-x: auto;
+
+    margin-top: 22px;
+
+    border-radius: 12px;
+}
+
+
+#blacklistTable {
+
+    width: 100%;
+
+    min-width: 650px;
+
+    border-collapse: collapse;
+}
+
+
+#blacklistTable th {
+
+    padding: 14px;
+
+    color: #60a5fa;
+
+    background:
+        rgba(59, 130, 246, 0.045);
+
+    border-bottom:
+        1px solid
+        rgba(96, 165, 250, 0.12);
+
+    text-align: left;
+
+    font-size: 0.62rem;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.09em;
+
+    cursor: pointer;
+
+    user-select: none;
+}
+
+
+#blacklistTable th:hover {
+
+    color: #93c5fd;
+
+    background:
+        rgba(59, 130, 246, 0.08);
+}
+
+
+#blacklistTable td {
+
+    padding: 15px 14px;
+
+    color: #cbd5e1;
+
+    border-bottom:
+        1px solid
+        rgba(148, 163, 184, 0.08);
+
+    font-size: 0.75rem;
+}
+
+
+#blacklistTable tbody tr {
+
+    transition:
+        background 0.2s ease;
+}
+
+
+#blacklistTable tbody tr:hover {
+
+    background:
+        rgba(59, 130, 246, 0.045);
+}
+
+
+/* =========================
+   RISK BADGES
+========================= */
+
+.risk-high,
+.risk-medium,
+.risk-low {
+
+    display: inline-block;
+
+    padding: 5px 8px;
+
+    border-radius: 6px;
+
+    font-size: 0.55rem;
+
+    font-weight: 850;
+
+    letter-spacing: 0.07em;
+}
+
+
+/* HIGH */
+
+.risk-high {
+
+    color: #fca5a5;
+
+    background:
+        rgba(239, 68, 68, 0.1);
+
+    border:
+        1px solid
+        rgba(239, 68, 68, 0.25);
+
+    box-shadow:
+        0 0 12px
+        rgba(239, 68, 68, 0.05);
+}
+
+
+/* MEDIUM */
+
+.risk-medium {
+
+    color: #fcd34d;
+
+    background:
+        rgba(245, 158, 11, 0.1);
+
+    border:
+        1px solid
+        rgba(245, 158, 11, 0.25);
+}
+
+
+/* LOW */
+
+.risk-low {
+
+    color: #86efac;
+
+    background:
+        rgba(34, 197, 94, 0.1);
+
+    border:
+        1px solid
+        rgba(34, 197, 94, 0.25);
+}
+
+
+/* =========================
+   PAGINATION
+========================= */
+
+.pagination {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    flex-wrap: wrap;
+
+    gap: 7px;
+
+    margin-top: 22px;
+}
+
+
+.pagination button {
+
+    width: auto;
+
+    min-width: 38px;
+
+    padding: 8px 11px;
+
+    color: #94a3b8;
+
+    background:
+        rgba(15, 23, 42, 0.8);
+
+    border:
+        1px solid
+        rgba(96, 165, 250, 0.13);
+
+    border-radius: 8px;
+
+    box-shadow: none;
+
+    font-size: 0.68rem;
+}
+
+
+.pagination button:hover {
+
+    color: white;
+
+    background:
+        rgba(59, 130, 246, 0.12);
+
+    border-color:
+        rgba(59, 130, 246, 0.3);
+
+    transform: none;
+
+    box-shadow: none;
+}
+
+
+.pagination .active-page {
+
+    color: white;
+
+    background:
+        #2563eb;
+
+    border-color:
+        #3b82f6;
+
+    box-shadow:
+        0 5px 15px
+        rgba(37, 99, 235, 0.25);
+}
+
+
+/* =========================
+   BLACKLIST MOBILE
+========================= */
+
+@media (max-width: 599px) {
+
+    #blacklist-page {
+
+        padding:
+            65px 16px
+            80px;
+    }
+
+
+    .blacklist-heading {
+
+        margin-bottom: 32px;
+    }
+
+
+    .blacklist-heading h1 {
+
+        font-size:
+            clamp(
+                2.8rem,
+                14vw,
+                4.2rem
+            );
+    }
+
+
+    .blacklist-heading p {
+
+        font-size: 0.82rem;
+    }
+
+
+    .blacklist-card {
+
+        padding: 19px;
+
+        border-radius: 17px;
+    }
+
+
+    .table-heading {
+
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+
+    .table-heading > span {
+
+        align-self: flex-start;
+    }
+
+
+    #blacklistTable {
+
+        min-width: 620px;
+    }
+
+
+    .pagination {
+
+        gap: 5px;
+    }
+
+
+    .pagination button {
+
+        min-width: 34px;
+
+        padding:
+            7px 9px;
+
+        font-size: 0.62rem;
+    }
+
+}
+
+
+/* =========================
+   TABLET
+========================= */
+
+@media (min-width: 600px) {
+
+    #blacklist-page {
+
+        padding:
+            100px 35px
+            120px;
+    }
+
+
+    .blacklist-card {
+
+        padding: 28px;
+    }
+
+
+    .blacklist-card form {
+
+        max-width: 700px;
+    }
+
+}
+
+
+/* =========================
+   DESKTOP / LARGE TABLET
+========================= */
+
+@media (min-width: 900px) {
+
+    #blacklist-page {
+
+        padding:
+            110px 45px
+            130px;
+    }
+
+
+    .blacklist-card {
+
+        padding: 30px;
+    }
+
+}

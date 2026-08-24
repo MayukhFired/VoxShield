@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+venv/
+env/
+.venv/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# ML model weights (too large for git)
+ml/models/*.pth
+ml/models/*.pt
+ml/models/*.bin
+
+# Database
+*.db
+*.sqlite3
+
+# Audio data (too large for git)
+data/real/*.wav
+data/real/*.mp3
+data/synthetic/*.wav
+data/synthetic/*.mp3
+data/test_pairs/*.wav
+data/test_pairs/*.mp3
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

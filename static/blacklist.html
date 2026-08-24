@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Caller Blacklist — VoxShield AI</title>
+
+    <link
+        rel="icon"
+        type="image/png"
+        href="logo.png"
+    >
+
+    <!-- Same CSS -->
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================
+         HEADER
+    ========================== -->
+
+    <header>
+
+        <div class="logo">
+            🛡️ VoxShield AI
+        </div>
+
+        <nav>
+
+            <a href="index.html">
+                Home
+            </a>
+
+            <a href="index.html#detect">
+                Detect
+            </a>
+
+            <a href="index.html#live">
+                Live Mic
+            </a>
+
+            <a href="blacklist.html">
+                Caller Blacklist
+            </a>
+
+        </nav>
+
+    </header>
+
+
+
+    <!-- =========================
+         CALLER BLACKLIST
+    ========================== -->
+
+    <main>
+
+        <section id="blacklist-page">
+
+
+            <!-- HEADING -->
+
+            <div class="blacklist-heading">
+
+                <span>
+                    CALLER SECURITY
+                </span>
+
+                <h1>
+                    Caller
+                    <strong>Blacklist.</strong>
+                </h1>
+
+                <p>
+                    Search suspicious numbers,
+                    check their risk level and
+                    report potential voice scams.
+                </p>
+
+            </div>
+
+
+
+            <!-- =========================
+                 SEARCH CALLER
+            ========================== -->
+
+            <div class="blacklist-card">
+
+                <h2>
+                    Search Caller
+                </h2>
+
+                <p>
+                    Check whether a phone number
+                    has been reported.
+                </p>
+
+
+                <form id="blacklistSearchForm">
+
+                    <input
+                        type="search"
+                        id="search"
+                        placeholder="Enter phone number..."
+                    >
+
+                    <button type="submit">
+                        Search
+                    </button>
+
+                </form>
+
+
+                <!-- SEARCH RESULT -->
+
+                <div
+                    id="searchResult"
+                    class="search-result"
+                ></div>
+
+            </div>
+
+
+
+            <!-- =========================
+                 REPORT CALLER
+            ========================== -->
+
+            <div class="blacklist-card">
+
+                <h2>
+                    Report a Caller
+                </h2>
+
+                <p>
+                    Help protect other users by
+                    reporting suspicious callers.
+                </p>
+
+
+                <form id="reportForm">
+
+                    <input
+                        type="tel"
+                        id="phone"
+                        placeholder="+91 XXXXX XXXXX"
+                        required
+                    >
+
+
+                    <select
+                        id="reason"
+                        required
+                    >
+
+                        <option value="">
+                            Select reason
+                        </option>
+
+                        <option value="fake">
+                            AI / Fake Voice
+                        </option>
+
+                        <option value="scam">
+                            Scam
+                        </option>
+
+                        <option value="fraud">
+                            Fraud
+                        </option>
+
+                        <option value="spam">
+                            Spam
+                        </option>
+
+                    </select>
+
+
+                    <textarea
+                        id="description"
+                        rows="5"
+                        placeholder="Describe what happened..."
+                        required
+                    ></textarea>
+
+
+                    <button type="submit">
+                        Submit Report
+                    </button>
+
+                </form>
+
+            </div>
+
+
+
+            <!-- =========================
+                 REPORTED CALLERS
+            ========================== -->
+
+            <div class="blacklist-card">
+
+
+                <div class="table-heading">
+
+                    <div>
+
+                        <h2>
+                            Reported Callers
+                        </h2>
+
+                        <p>
+                            Known suspicious numbers
+                        </p>
+
+                    </div>
+
+
+                    <span>
+                        LIVE DATABASE
+                    </span>
+
+                </div>
+
+
+
+                <!-- TABLE -->
+
+                <div class="table-wrapper">
+
+                    <table id="blacklistTable">
+
+                        <thead>
+
+                            <tr>
+
+                                <th data-column="phone">
+                                    Phone Number
+                                </th>
+
+                                <th data-column="risk">
+                                    Risk
+                                </th>
+
+                                <th data-column="status">
+                                    Status
+                                </th>
+
+                                <th data-column="date">
+                                    Date
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            <tr>
+
+                                <td>
+                                    +91 98765 43210
+                                </td>
+
+                                <td>
+
+                                    <b class="risk-high">
+                                        HIGH
+                                    </b>
+
+                                </td>
+
+                                <td>
+                                    FAKE
+                                </td>
+
+                                <td>
+                                    24 Aug 2026
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    +91 91234 56789
+                                </td>
+
+                                <td>
+
+                                    <b class="risk-medium">
+                                        MEDIUM
+                                    </b>
+
+                                </td>
+
+                                <td>
+                                    SUSPICIOUS
+                                </td>
+
+                                <td>
+                                    23 Aug 2026
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    +91 87654 32109
+                                </td>
+
+                                <td>
+
+                                    <b class="risk-low">
+                                        LOW
+                                    </b>
+
+                                </td>
+
+                                <td>
+                                    SAFE
+                                </td>
+
+                                <td>
+                                    22 Aug 2026
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    +91 99887 76655
+                                </td>
+
+                                <td>
+
+                                    <b class="risk-high">
+                                        HIGH
+                                    </b>
+
+                                </td>
+
+                                <td>
+                                    FAKE
+                                </td>
+
+                                <td>
+                                    21 Aug 2026
+                                </td>
+
+                            </tr>
+
+
+                            <tr>
+
+                                <td>
+                                    +91 90909 80808
+                                </td>
+
+                                <td>
+
+                                    <b class="risk-medium">
+                                        MEDIUM
+                                    </b>
+
+                                </td>
+
+                                <td>
+                                    SUSPICIOUS
+                                </td>
+
+                                <td>
+                                    20 Aug 2026
+                                </td>
+
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+
+
+                <!-- PAGINATION -->
+
+                <div class="pagination">
+
+                    <button
+                        type="button"
+                        id="previousPage"
+                    >
+                        Previous
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="page-number active-page"
+                    >
+                        1
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="page-number"
+                    >
+                        2
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="page-number"
+                    >
+                        3
+                    </button>
+
+
+                    <button
+                        type="button"
+                        id="nextPage"
+                    >
+                        Next
+                    </button>
+
+                </div>
+
+
+            </div>
+
+
+        </section>
+
+    </main>
+
+
+
+    <!-- =========================
+         JAVASCRIPT
+    ========================== -->
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
