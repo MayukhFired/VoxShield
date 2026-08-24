@@ -6,7 +6,8 @@ import sys
 import os
 
 # Add project root to path so ML module is importable
-PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
+# __file__ is backend/app/main.py → project root is 2 dirs up
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
 from app.routers import detect, blacklist, websocket_stream
@@ -31,23 +32,25 @@ app.include_router(detect.router, prefix="/api", tags=["Detection"])
 app.include_router(blacklist.router, prefix="/api/blacklist", tags=["Blacklist"])
 app.include_router(websocket_stream.router, tags=["WebSocket"])
 
+# Static frontend directory
+STATIC_DIR = os.path.join(PROJECT_ROOT, "static")
+
 
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "VoiceShield API", "version": "1.0.0"}
 
 
-# Serve static frontend files
-STATIC_DIR = os.path.join(PROJECT_ROOT, "static")
+@app.get("/")
+async def serve_index():
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
+
+@app.get("/blacklist.html")
+async def serve_blacklist():
+    return FileResponse(os.path.join(STATIC_DIR, "blacklist.html"))
+
+
+# Mount static assets LAST (CSS, JS, images at /static/)
 if os.path.isdir(STATIC_DIR):
-    # Mount static files with html=True so index.html is served at /
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
-    @app.get("/")
-    async def serve_index():
-        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
-
-    @app.get("/blacklist.html")
-    async def serve_blacklist():
-        return FileResponse(os.path.join(STATIC_DIR, "blacklist.html"))

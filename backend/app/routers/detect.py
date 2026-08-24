@@ -43,11 +43,15 @@ async def detect_voice(file: UploadFile = File(...)):
         
         # Import detector here to avoid slow startup
         from ml.ensemble import EnsembleDetector
+        import json
         
         detector = EnsembleDetector()
         result = detector.analyze(temp_path)
         
-        return JSONResponse(content=result)
+        # Ensure all values are JSON serializable (convert numpy types)
+        result_json = json.loads(json.dumps(result, default=lambda x: float(x) if hasattr(x, 'item') else x))
+        
+        return JSONResponse(content=result_json)
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")

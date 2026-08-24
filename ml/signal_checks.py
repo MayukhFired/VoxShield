@@ -69,7 +69,7 @@ def check_pitch_stability(audio: np.ndarray, sr: int = 16000) -> Dict[str, Any]:
         return {
             "check_name": "pitch_stability",
             "passed": pitch_natural,
-            "score": round(score, 4),
+            "score": float(round(score, 4)),
             "detail": detail
         }
     
@@ -151,7 +151,7 @@ def check_breath_presence(audio: np.ndarray, sr: int = 16000) -> Dict[str, Any]:
         return {
             "check_name": "breath_presence",
             "passed": has_breaths,
-            "score": round(score, 4),
+            "score": float(round(score, 4)),
             "detail": detail
         }
     
@@ -234,7 +234,7 @@ def check_silence_naturalness(audio: np.ndarray, sr: int = 16000) -> Dict[str, A
         return {
             "check_name": "silence_naturalness",
             "passed": is_natural,
-            "score": round(score, 4),
+            "score": float(round(score, 4)),
             "detail": detail
         }
     
@@ -301,7 +301,7 @@ def check_spectral_cutoff(audio: np.ndarray, sr: int = 16000) -> Dict[str, Any]:
         return {
             "check_name": "spectral_cutoff",
             "passed": is_natural,
-            "score": round(score, 4),
+            "score": float(round(score, 4)),
             "detail": detail
         }
     

@@ -115,20 +115,20 @@ class EnsembleDetector:
         
         return {
             "verdict": verdict,
-            "confidence": confidence,
-            "ensemble_score": round(ensemble_score, 4),
-            "duration_seconds": round(duration, 2),
+            "confidence": float(confidence),
+            "ensemble_score": float(round(ensemble_score, 4)),
+            "duration_seconds": float(round(duration, 2)),
             "model_result": {
                 "label": aasist_result["label"],
-                "confidence": aasist_result.get("confidence", 0.0),
+                "confidence": float(aasist_result.get("confidence", 0.0)),
                 "raw_scores": aasist_result.get("raw_scores", {}),
             },
             "signal_checks": signal_results,
             "signal_summary": {
-                "checks_passed": checks_total - checks_failed,
-                "checks_failed": checks_failed,
-                "checks_total": checks_total,
-                "combined_score": round(signal_combined, 4),
+                "checks_passed": int(checks_total - checks_failed),
+                "checks_failed": int(checks_failed),
+                "checks_total": int(checks_total),
+                "combined_score": float(round(signal_combined, 4)),
             },
             "spectrogram": spectrogram_data,
         }
@@ -161,9 +161,9 @@ class EnsembleDetector:
             
             return {
                 "data": normalized,
-                "n_mels": mel_spec_db.shape[0],
-                "n_frames": mel_spec_db.shape[1],
-                "sr": sr,
+                "n_mels": int(mel_spec_db.shape[0]),
+                "n_frames": int(mel_spec_db.shape[1]),
+                "sr": int(sr),
             }
         
         except Exception:
