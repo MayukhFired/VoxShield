@@ -41,15 +41,13 @@ async def health_check():
 STATIC_DIR = os.path.join(PROJECT_ROOT, "static")
 
 if os.path.isdir(STATIC_DIR):
-    # Serve index.html at root
+    # Mount static files with html=True so index.html is served at /
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
     @app.get("/")
     async def serve_index():
         return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
-    # Serve blacklist.html
     @app.get("/blacklist.html")
     async def serve_blacklist():
         return FileResponse(os.path.join(STATIC_DIR, "blacklist.html"))
-
-    # Mount static files (CSS, JS, images) — must be AFTER route definitions
-    app.mount("/", StaticFiles(directory=STATIC_DIR), name="static")
