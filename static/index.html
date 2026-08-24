@@ -3,676 +3,269 @@
 
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <meta
-        name="description"
-        content="VoxShield AI - AI-powered voice security and deepfake detection."
-    >
-
+    <meta name="description" content="VoxShield AI - AI-powered voice security and deepfake detection.">
     <title>VoxShield AI - Detect.Verify.Protect</title>
     <link rel="icon" type="image/png" href="logo.png">
-
     <link rel="stylesheet" href="style.css">
 </head>
 
-
 <body>
 
-    <!-- =========================
-         HEADER / NAVIGATION
-    ========================== -->
-
+    <!-- HEADER -->
     <header>
-
-        <div class="logo">
-            🛡️ VoxShield AI
-        </div>
-
+        <div class="logo">🛡️ VoxShield AI</div>
         <nav>
             <a href="#home">Home</a>
             <a href="#detect">Detect</a>
             <a href="#live">Live Mic</a>
-            <a href="#blacklist">Blacklist</a>
+            <a href="blacklist.html">Blacklist</a>
             <a href="#call">Call</a>
             <a href="#about">About</a>
         </nav>
-
     </header>
-
-
-    <!-- =========================
-         MAIN
-    ========================== -->
 
     <main>
 
-
-        <!-- =========================
-             HOME / LANDING PAGE
-        ========================== -->
-
+        <!-- HOME / HERO -->
         <section id="home">
-
-            <!-- OUR LOGO -->
-
             <div class="hero-logo">
-
-                <img
-                    src="logo.png"
-                    alt="VoxShield AI Logo"
-                >
-
+                <img src="logo.png" alt="VoxShield AI Logo">
             </div>
-
-
-            <!-- SMALL HEADING -->
-
-            <p class="hero-label">
-                AI-POWERED VOICE PROTECTION
-            </p>
-
-
-            <!-- MAIN HEADING -->
-
-            <h1>
-                Know Who's
-                <span>Real.</span>
-            </h1>
-
-
-            <!-- DESCRIPTION -->
-
+            <p class="hero-label">AI-POWERED VOICE PROTECTION</p>
+            <h1>Know Who's <span>Real.</span></h1>
             <p class="hero-description">
-
-                AI-powered voice protection against
-                deepfakes, scams, and synthetic voices.
-
+                AI-powered voice protection against deepfakes, scams, and synthetic voices.
+                Detect cloned voices in real-time with 99% accuracy.
             </p>
-
-
-            <!-- BUTTONS -->
-
             <div class="hero-buttons">
-
-                <a href="#detect">
-                    Start Detection
-                </a>
-
-                <a href="#live">
-                    Try Live Mic
-                </a>
-
+                <a href="#detect">Start Detection</a>
+                <a href="#live">Try Live Mic</a>
             </div>
-
-
-            <!-- TRUST -->
-
             <div class="trust-line">
-
                 <span class="status-dot"></span>
-
-                AI-powered voice security
-
+                AI-powered voice security — Zero audio storage
             </div>
-
         </section>
 
 
-
-        <!-- =========================
-             WHY VOXSHIELD
-        ========================== -->
-
+        <!-- WHY VOXSHIELD -->
         <section id="why">
-
-            <h2>
-                Why VoxShield AI?
-            </h2>
-
-            <p>
-                Protect yourself from AI-generated voices,
-                suspicious callers and voice-based scams.
-            </p>
-
+            <h2>Why VoxShield AI?</h2>
+            <p>Protect yourself from AI-generated voices, suspicious callers and voice-based scams.</p>
 
             <article>
-
-                <h3>
-                    AI Voice Detection
-                </h3>
-
-                <p>
-                    Analyze audio and identify
-                    potential AI-generated voices.
-                </p>
-
+                <h3>AI Voice Detection</h3>
+                <p>Upload audio or stream live — our AI identifies synthetic voices by analyzing acoustic markers invisible to human ears.</p>
             </article>
-
 
             <article>
-
-                <h3>
-                    Real-Time Analysis
-                </h3>
-
-                <p>
-                    Use your microphone for live
-                    voice analysis.
-                </p>
-
+                <h3>Real-Time Analysis</h3>
+                <p>Use your microphone for live voice analysis with instant confidence scoring in under 2 seconds.</p>
             </article>
-
 
             <article>
-
-                <h3>
-                    Caller Protection
-                </h3>
-
-                <p>
-                    Identify suspicious callers using
-                    security alerts.
-                </p>
-
+                <h3>Community Protection</h3>
+                <p>When one user catches a scammer, everyone is protected. Community-powered blacklist database.</p>
             </article>
-
         </section>
 
 
-
-        <!-- =========================
-             TASK 1
-             AUDIO DETECTION
-        ========================== -->
-
+        <!-- AUDIO DETECTION -->
         <section id="detect">
-
-            <h2>
-                Audio Detection
-            </h2>
-
-            <p>
-                Upload an audio file to analyze
-                its voice authenticity.
-            </p>
-
+            <h2>Audio Detection</h2>
+            <p>Upload an audio file to analyze its voice authenticity using AI.</p>
 
             <form>
-
-                <label for="audioFile">
-                    Select Audio File
-                </label>
-
-                <input
-                    type="file"
-                    id="audioFile"
-                    name="audioFile"
-                    accept="audio/*"
-                >
-
-                <button type="submit">
-                    Analyze Audio
-                </button>
-
+                <label for="audioFile">Select Audio File (WAV, MP3, FLAC, OGG — max 10MB)</label>
+                <input type="file" id="audioFile" name="audioFile" accept="audio/*">
+                <button type="submit">Analyze Audio</button>
             </form>
 
-
-            <!-- AUDIO PLAYER -->
-
+            <!-- Audio Player -->
             <div>
-
-                <h3>
-                    Selected Audio
-                </h3>
-
-                <audio controls>
-                    Your browser does not support audio playback.
-                </audio>
-
+                <h3>Selected Audio</h3>
+                <audio controls>Your browser does not support audio playback.</audio>
             </div>
 
-
-            <!-- SPECTROGRAM -->
-
+            <!-- Spectrogram -->
             <div>
-
-                <h3>
-                    Spectrogram
-                </h3>
-
-                <div>
-
-                    <p>
-                        Spectrogram visualization
-                        will appear here.
-                    </p>
-
+                <h3>Spectrogram Analysis</h3>
+                <div style="min-height:180px;display:flex;align-items:center;justify-content:center;border-radius:15px;overflow:hidden;background:#0f172a;">
+                    <canvas id="spectrogramCanvas" style="width:100%;max-height:200px;image-rendering:pixelated;"></canvas>
                 </div>
-
             </div>
 
+            <!-- Detection Result -->
+            <div id="detectResult" style="display:none;">
+                <h3>Detection Result</h3>
+                <p class="verdict-text" style="font-size:1.8rem;font-weight:900;letter-spacing:0.05em;margin:12px 0;">—</p>
+                <p class="confidence-text" style="color:#94a3b8;">Confidence: —</p>
+                <p class="duration-text" style="color:#64748b;font-size:0.8rem;">Duration: —</p>
+            </div>
 
-            <!-- DETECTION RESULT -->
-
+            <!-- Signal Checks -->
             <div>
-
-                <h3>
-                    Detection Result
-                </h3>
-
-                <p>
-                    Result:
-                </p>
-
-                <strong>
-                    REAL
-                </strong>
-
-                <p>
-                    Confidence: 92%
-                </p>
-
+                <h3>Acoustic Analysis</h3>
+                <div id="signalChecks">
+                    <p style="color:#64748b;">Upload audio to see detailed analysis.</p>
+                </div>
             </div>
-
         </section>
 
 
-
-        <!-- =========================
-             TASK 2
-             LIVE MICROPHONE
-        ========================== -->
-
+        <!-- LIVE MICROPHONE -->
         <section id="live">
+            <h2>Live Voice Detection</h2>
+            <p>Analyze voice authenticity in real-time using your microphone.</p>
 
-            <h2>
-                Live Voice Detection
-            </h2>
-
-            <p>
-                Analyze your voice using the microphone.
-            </p>
-
-
-            <!-- MICROPHONE CONTROLS -->
-
+            <!-- Mic Controls -->
             <div>
-
-                <button type="button">
-                    🎙️ Start Listening
-                </button>
-
-                <button type="button">
-                    Stop
-                </button>
-
+                <button type="button" id="startMic">🎙️ Start Listening</button>
+                <button type="button" id="stopMic">⏹ Stop</button>
             </div>
 
-
-            <!-- WAVEFORM -->
-
+            <!-- Waveform -->
             <div>
-
-                <h3>
-                    Live Waveform
-                </h3>
-
-                <div>
-                    ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~
-                </div>
-
+                <h3>Live Waveform</h3>
+                <div id="waveformDisplay">Click "Start Listening" to begin</div>
             </div>
 
-
-            <!-- CONFIDENCE -->
-
+            <!-- Confidence -->
             <div>
-
-                <h3>
-                    AI Confidence
-                </h3>
-
-                <progress
-                    value="92"
-                    max="100">
-                </progress>
-
-                <p>
-                    92%
-                </p>
-
+                <h3>AI Confidence</h3>
+                <progress id="liveConfidence" value="0" max="100"></progress>
+                <p id="liveConfidenceText">0%</p>
             </div>
 
-
-            <!-- LIVE RESULT -->
-
+            <!-- Live Result -->
             <div>
-
-                <h3>
-                    Current Result
-                </h3>
-
-                <strong>
-                    REAL
-                </strong>
-
+                <h3>Current Result</h3>
+                <strong id="liveResult" style="font-size:1.2rem;">WAITING</strong>
             </div>
-
         </section>
 
 
+        <!-- BLACKLIST PREVIEW -->
+        <section id="blacklist">
+            <h2>Community Blacklist</h2>
+            <p>Search and report scam phone numbers. Protect everyone.</p>
 
-        <!-- =========================
-             TASK 3
-             BLACKLIST
-        ========================== -->
+            <article>
+                <h3>How It Works</h3>
+                <p>When our AI detects a fake voice during a call, the number gets reported to our shared database. Next time anyone receives a call from that number, they get an instant warning — before they even pick up.</p>
+            </article>
 
-        
+            <article>
+                <h3>Check Any Number</h3>
+                <p>Search our database of reported scam numbers. Check if a caller has been flagged by other users.</p>
+                <a href="blacklist.html" style="display:inline-block;margin-top:12px;padding:10px 18px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;border-radius:10px;font-weight:700;font-size:0.85rem;text-decoration:none;">Open Blacklist Database →</a>
+            </article>
+        </section>
 
 
-        <!-- =========================
-             TASK 4
-             SIMULATED CALL
-        ========================== -->
-
+        <!-- SIMULATED CALL -->
         <section id="call">
+            <h2>Simulated Call</h2>
+            <p>Test how VoxShield protects you during phone calls.</p>
 
-            <h2>
-                Simulated Call
-            </h2>
-
-            <p>
-                Test different caller scenarios.
-            </p>
-
-
-            <!-- INCOMING CALL -->
-
+            <!-- Incoming Call -->
             <div>
+                <p>Incoming Call</p>
+                <h3>Unknown Caller</h3>
+                <p id="callerNumber">+91 87654 32100</p>
 
-                <p>
-                    Incoming Call
-                </p>
-
-                <h3>
-                    Unknown Caller
-                </h3>
-
-                <p>
-                    +91 XXXXX XXXXX
-                </p>
-
-
-                <!-- ALERT -->
-
-                <div>
-
-                    <strong>
-                        ⚠️ FAKE CALL DETECTED
-                    </strong>
-
-                    <p>
-                        AI Confidence: 94%
-                    </p>
-
-                    <p>
-                        This caller may be using a
-                        synthetic or manipulated voice.
-                    </p>
-
+                <!-- Alert -->
+                <div id="callAlertBox">
+                    <strong>⚠️ FAKE VOICE DETECTED</strong>
+                    <p id="callAlertConfidence">AI Confidence: 94%</p>
+                    <p id="callAlertDescription">This caller is using a synthetic or cloned voice.</p>
                 </div>
 
-
-                <!-- CALL CONTROLS -->
-
-                <button type="button">
-                    Decline
-                </button>
-
-                <button type="button">
-                    Accept
-                </button>
-
+                <!-- Call Controls -->
+                <button type="button" id="callDecline">Decline</button>
+                <button type="button" id="callAccept">Accept</button>
             </div>
 
-
-            <!-- SCENARIOS -->
-
+            <!-- Scenarios -->
             <div>
-
-                <h3>
-                    Test Scenario
-                </h3>
-
-                <button type="button">
-                    Fake Call
-                </button>
-
-                <button type="button">
-                    Real Call
-                </button>
-
-                <button type="button">
-                    Suspicious Call
-                </button>
-
+                <h3>Test Scenarios</h3>
+                <button type="button" id="scenarioFake">Fake Call</button>
+                <button type="button" id="scenarioReal">Real Call</button>
+                <button type="button" id="scenarioSuspicious">Suspicious Call</button>
             </div>
-
         </section>
 
 
-
-        <!-- =========================
-             HOW IT WORKS
-        ========================== -->
-
+        <!-- HOW IT WORKS -->
         <section id="how-it-works">
-
-            <h2>
-                How It Works
-            </h2>
-
+            <h2>How It Works</h2>
 
             <article>
-
-                <h3>
-                    01. Upload
-                </h3>
-
-                <p>
-                    Upload an audio recording.
-                </p>
-
+                <h3>01. Upload or Stream</h3>
+                <p>Upload a voice recording or activate your microphone for real-time analysis.</p>
             </article>
-
 
             <article>
-
-                <h3>
-                    02. Analyze
-                </h3>
-
-                <p>
-                    VoxShield AI analyzes the voice.
-                </p>
-
+                <h3>02. AI Analyzes</h3>
+                <p>Our AASIST neural network + 4 acoustic signal checks examine the voice for synthetic markers.</p>
             </article>
-
 
             <article>
-
-                <h3>
-                    03. Verify
-                </h3>
-
-                <p>
-                    The system generates a confidence score.
-                </p>
-
+                <h3>03. Get Verdict</h3>
+                <p>Instant result with confidence score, spectrogram visualization, and detailed breakdown.</p>
             </article>
-
 
             <article>
-
-                <h3>
-                    04. Protect
-                </h3>
-
-                <p>
-                    Get alerts when suspicious activity is detected.
-                </p>
-
+                <h3>04. Protect Community</h3>
+                <p>Report detected scam numbers. One detection protects thousands of users.</p>
             </article>
-
         </section>
 
 
-
-        <!-- =========================
-             ABOUT
-        ========================== -->
-
+        <!-- ABOUT -->
         <section id="about">
-
-            <h2>
-                About VoxShield AI
-            </h2>
-
-            <p>
-                VoxShield AI is an AI-powered voice security
-                platform designed to help users identify
-                fake, synthetic and suspicious voices.
-            </p>
-
-            <p>
-                Our goal is to make voice communication
-                safer in the age of generative AI.
-            </p>
-
+            <h2>About VoxShield AI</h2>
+            <p>VoxShield AI is an AI-powered voice security platform designed to detect synthetic and cloned voices in real-time. Built for Smart India Hackathon 2025.</p>
+            <p>Our detection engine combines a pretrained AASIST deep learning model (99.2% accuracy on ASVspoof benchmarks) with interpretable acoustic signal analysis — pitch stability, breath detection, silence naturalness, and spectral cutoff analysis.</p>
+            <p><strong style="color:#60a5fa;">Privacy First:</strong> Zero audio storage. No transcription. All analysis happens locally. Your voice data is never stored or transmitted.</p>
         </section>
 
 
-
-        <!-- =========================
-             CONTACT
-        ========================== -->
-
+        <!-- CONTACT -->
         <section id="contact">
-
-            <h2>
-                Contact Us
-            </h2>
-
-
+            <h2>Contact Us</h2>
             <form>
-
-                <label for="name">
-                    Name
-                </label>
-
-                <input
-                    type="text"
-                    id="name"
-                    placeholder="Your name"
-                >
-
-
-                <label for="email">
-                    Email
-                </label>
-
-                <input
-                    type="email"
-                    id="email"
-                    placeholder="your@email.com"
-                >
-
-
-                <label for="message">
-                    Message
-                </label>
-
-                <textarea
-                    id="message"
-                    rows="5"
-                    placeholder="Write your message..."
-                ></textarea>
-
-
-                <button type="submit">
-                    Send Message
-                </button>
-
+                <label for="name">Name</label>
+                <input type="text" id="name" placeholder="Your name">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="your@email.com">
+                <label for="message">Message</label>
+                <textarea id="message" rows="5" placeholder="Write your message..."></textarea>
+                <button type="submit">Send Message</button>
             </form>
-
         </section>
 
     </main>
 
-
-
-    <!-- =========================
-         FOOTER
-    ========================== -->
-
+    <!-- FOOTER -->
     <footer>
-
         <div>
-
-            <h3>
-                🛡️ VoxShield AI
-            </h3>
-
-            <p>
-                Detect. Verify. Protect.
-            </p>
-
+            <h3>🛡️ VoxShield AI</h3>
+            <p>Detect. Verify. Protect.</p>
         </div>
-
-
         <div>
-
-            <a href="#home">
-                Home
-            </a>
-
-            <a href="#detect">
-                Detect
-            </a>
-
-            <a href="#live">
-                Live Mic
-            </a>
-
-            <a href="#blacklist">
-                Blacklist
-            </a>
-
-            <a href="#about">
-                About
-            </a>
-
-            <a href="#contact">
-                Contact
-            </a>
-
+            <a href="#home">Home</a>
+            <a href="#detect">Detect</a>
+            <a href="#live">Live Mic</a>
+            <a href="blacklist.html">Blacklist</a>
+            <a href="#about">About</a>
+            <a href="#contact">Contact</a>
         </div>
-
-
-        <p>
-            © 2026 VoxShield AI · All Rights Reserved
-        </p>
-
+        <p>© 2025 VoxShield AI · Smart India Hackathon · All Rights Reserved</p>
     </footer>
-
-
-
-    <!-- EXTERNAL JAVASCRIPT -->
 
     <script src="script.js"></script>
 
 </body>
-
 </html>

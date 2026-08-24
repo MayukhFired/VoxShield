@@ -1,1372 +1,746 @@
 /* =========================================================
-   VOXSHIELD AI
-   Frontend JavaScript
+   VOXSHIELD AI — Frontend JavaScript
+   Connected to FastAPI backend at /api/*
 ========================================================= */
+
+const API_BASE = "";  // Same origin — served by FastAPI
 
 
 /* =========================================================
-   AUDIO DETECTION
+   AUDIO DETECTION (index.html #detect)
 ========================================================= */
 
-const detectSection = document.querySelector("#detect");
+(function initDetection() {
 
-if (detectSection) {
+    const detectSection = document.querySelector("#detect");
+    if (!detectSection) return;
 
-    const audioForm =
-        detectSection.querySelector("form");
+    const audioForm = detectSection.querySelector("form");
+    const audioFile = document.querySelector("#audioFile");
+    const audioPlayer = detectSection.querySelector("audio");
+    const spectrogramCanvas = document.querySelector("#spectrogramCanvas");
+    const resultBox = document.querySelector("#detectResult");
+    const checksContainer = document.querySelector("#signalChecks");
+    const submitBtn = audioForm ? audioForm.querySelector("button[type='submit']") : null;
 
-    const audioFile =
-        document.querySelector("#audioFile");
-
-    const audioPlayer =
-        detectSection.querySelector("audio");
-
-    const resultBox =
-        detectSection.querySelector(
-            "div:nth-of-type(3)"
-        );
-
-    const resultText =
-        resultBox
-            ? resultBox.querySelector("strong")
-            : null;
-
-    const confidenceText =
-        resultBox
-            ? resultBox.querySelector("p:last-child")
-            : null;
-
-
-    /* Select audio file */
-
+    // Preview selected audio
     if (audioFile && audioPlayer) {
-
-        audioFile.addEventListener(
-            "change",
-            function () {
-
-                const file =
-                    this.files[0];
-
-                if (!file) {
-                    return;
-                }
-
-                const audioURL =
-                    URL.createObjectURL(file);
-
-                audioPlayer.src =
-                    audioURL;
-
-                console.log(
-                    "Selected file:",
-                    file.name
-                );
-
-            }
-        );
-
+        audioFile.addEventListener("change", function () {
+            const file = this.files[0];
+            if (!file) return;
+            audioPlayer.src = URL.createObjectURL(file);
+            // Reset previous results
+            if (resultBox) resultBox.style.display = "none";
+            if (checksContainer) checksContainer.innerHTML = "";
+        });
     }
 
-
-    /* Analyze audio */
-
+    // Submit for analysis
     if (audioForm) {
+        audioForm.addEventListener("submit", async function (event) {
+            event.preventDefault();
 
-        audioForm.addEventListener(
-            "submit",
-            function (event) {
+            if (!audioFile || !audioFile.files.length) {
+                alert("Please select an audio file first.");
+                return;
+            }
 
-                event.preventDefault();
+            const file = audioFile.files[0];
+
+            // Max 10MB check
+            if (file.size > 10 * 1024 * 1024) {
+                alert("File too large. Maximum size is 10MB.");
+                return;
+            }
+
+            // Show loading state
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Analyzing...";
+            }
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            try {
+                const response = await fetch(API_BASE + "/api/detect", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.detail || "Analysis failed");
+                }
+
+                const result = await response.json();
+                displayDetectionResult(result);
+
+            } catch (error) {
+                alert("Error: " + error.message);
+                console.error(error);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Analyze Audio";
+                }
+            }
+        });
+    }
+
+    function displayDetectionResult(result) {
+        if (!resultBox) return;
+
+        resultBox.style.display = "block";
+
+        const verdictEl = resultBox.querySelector(".verdict-text");
+        const confidenceEl = resultBox.querySelector(".confidence-text");
+        const durationEl = resultBox.querySelector(".duration-text");
+
+        if (verdictEl) {
+            verdictEl.textContent = result.verdict.toUpperCase();
+            if (result.verdict === "fake") {
+                verdictEl.style.color = "#ef4444";
+                resultBox.style.borderColor = "rgba(239, 68, 68, 0.4)";
+                resultBox.style.background = "rgba(239, 68, 68, 0.05)";
+            } else {
+                verdictEl.style.color = "#22c55e";
+                resultBox.style.borderColor = "rgba(34, 197, 94, 0.4)";
+                resultBox.style.background = "rgba(34, 197, 94, 0.05)";
+            }
+        }
+
+        if (confidenceEl) {
+            confidenceEl.textContent = "Confidence: " + Math.round(result.confidence * 100) + "%";
+        }
+
+        if (durationEl) {
+            durationEl.textContent = "Duration: " + result.duration_seconds + "s";
+        }
+
+        // Render spectrogram
+        if (spectrogramCanvas && result.spectrogram && result.spectrogram.data.length > 0) {
+            renderSpectrogram(spectrogramCanvas, result.spectrogram);
+        }
+
+        // Render signal checks
+        if (checksContainer && result.signal_checks) {
+            renderSignalChecks(checksContainer, result.signal_checks);
+        }
+    }
+
+})();
 
 
-                if (
-                    !audioFile ||
-                    !audioFile.files.length
-                ) {
+/* =========================================================
+   SPECTROGRAM RENDERER
+========================================================= */
 
-                    alert(
-                        "Please select an audio file first."
-                    );
+function renderSpectrogram(canvas, specData) {
+    const ctx = canvas.getContext("2d");
+    const nMels = specData.n_mels;
+    const nFrames = specData.n_frames;
 
+    canvas.width = Math.min(800, nFrames * 4);
+    canvas.height = nMels * 3;
+
+    const cellWidth = canvas.width / nFrames;
+    const cellHeight = canvas.height / nMels;
+
+    for (let mel = 0; mel < nMels; mel++) {
+        for (let frame = 0; frame < nFrames; frame++) {
+            const value = specData.data[mel][frame];
+            ctx.fillStyle = spectrogramColor(value);
+            ctx.fillRect(
+                frame * cellWidth,
+                (nMels - 1 - mel) * cellHeight,
+                cellWidth + 1,
+                cellHeight + 1
+            );
+        }
+    }
+}
+
+function spectrogramColor(v) {
+    v = Math.max(0, Math.min(1, v));
+    if (v < 0.25) {
+        const t = v / 0.25;
+        return "rgb(" + Math.round(t * 30) + "," + Math.round(t * 50) + "," + Math.round(50 + t * 150) + ")";
+    } else if (v < 0.5) {
+        const t = (v - 0.25) / 0.25;
+        return "rgb(" + Math.round(30 + t * 20) + "," + Math.round(50 + t * 150) + "," + Math.round(200 - t * 50) + ")";
+    } else if (v < 0.75) {
+        const t = (v - 0.5) / 0.25;
+        return "rgb(" + Math.round(50 + t * 200) + "," + Math.round(200 - t * 50) + "," + Math.round(150 - t * 120) + ")";
+    } else {
+        const t = (v - 0.75) / 0.25;
+        return "rgb(250," + Math.round(150 - t * 120) + "," + Math.round(30 - t * 20) + ")";
+    }
+}
+
+
+/* =========================================================
+   SIGNAL CHECKS RENDERER
+========================================================= */
+
+function renderSignalChecks(container, checks) {
+    container.innerHTML = "";
+
+    checks.forEach(function (check) {
+        const passed = check.passed;
+        const icon = passed ? "✓" : "✗";
+        const color = passed ? "#22c55e" : "#ef4444";
+        const name = check.check_name.replace(/_/g, " ");
+        const score = Math.round(check.score * 100);
+
+        const div = document.createElement("div");
+        div.style.cssText = "padding:12px;margin-top:8px;border-radius:10px;background:rgba(15,23,42,0.6);border:1px solid " + (passed ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)") + ";";
+
+        div.innerHTML =
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
+            '<span style="color:' + color + ';font-weight:700;text-transform:capitalize;">' + icon + " " + name + '</span>' +
+            '<span style="color:' + color + ';font-size:0.85rem;font-weight:700;">' + score + '%</span>' +
+            '</div>' +
+            '<p style="color:#94a3b8;font-size:0.75rem;margin:0;">' + check.detail + '</p>';
+
+        container.appendChild(div);
+    });
+}
+
+
+/* =========================================================
+   LIVE MICROPHONE (index.html #live)
+========================================================= */
+
+(function initLiveMic() {
+
+    const liveSection = document.querySelector("#live");
+    if (!liveSection) return;
+
+    const startBtn = document.querySelector("#startMic");
+    const stopBtn = document.querySelector("#stopMic");
+    const waveformEl = document.querySelector("#waveformDisplay");
+    const liveResultEl = document.querySelector("#liveResult");
+    const confidenceBar = document.querySelector("#liveConfidence");
+    const confidenceText = document.querySelector("#liveConfidenceText");
+
+    let mediaRecorder = null;
+    let audioStream = null;
+    let ws = null;
+    let audioContext = null;
+    let analyser = null;
+    let animationId = null;
+
+    if (startBtn) {
+        startBtn.addEventListener("click", startListening);
+    }
+
+    if (stopBtn) {
+        stopBtn.disabled = true;
+        stopBtn.addEventListener("click", stopListening);
+    }
+
+    async function startListening() {
+        try {
+            audioStream = await navigator.mediaDevices.getUserMedia({
+                audio: { sampleRate: 16000, channelCount: 1 }
+            });
+
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+
+            if (liveResultEl) {
+                liveResultEl.textContent = "LISTENING...";
+                liveResultEl.style.color = "#3b82f6";
+            }
+
+            // Audio visualizer
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaStreamSource(audioStream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            animateWaveform();
+
+            // WebSocket connection
+            const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            ws = new WebSocket(wsProtocol + "//" + window.location.host + "/ws/stream");
+
+            ws.onopen = function () {
+                console.log("WebSocket connected");
+                // Record in 3-second chunks
+                mediaRecorder = new MediaRecorder(audioStream, { mimeType: "audio/webm" });
+                mediaRecorder.ondataavailable = function (event) {
+                    if (event.data.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
+                        event.data.arrayBuffer().then(function (buffer) {
+                            ws.send(buffer);
+                        });
+                    }
+                };
+                mediaRecorder.start(3000);
+            };
+
+            ws.onmessage = function (event) {
+                const data = JSON.parse(event.data);
+                if (data.error) {
+                    console.error("Detection error:", data.error);
                     return;
                 }
+                displayLiveResult(data);
+            };
 
-
-                /* Demo result */
-
-                const isFake =
-                    Math.random() > 0.5;
-
-
-                const confidence =
-                    Math.floor(
-                        Math.random() * 10 + 90
-                    );
-
-
-                if (
-                    resultText &&
-                    resultBox &&
-                    confidenceText
-                ) {
-
-                    if (isFake) {
-
-                        resultText.textContent =
-                            "FAKE";
-
-                        resultText.style.color =
-                            "#ef4444";
-
-                        resultBox.style.borderColor =
-                            "rgba(239, 68, 68, 0.4)";
-
-                    } else {
-
-                        resultText.textContent =
-                            "REAL";
-
-                        resultText.style.color =
-                            "#22c55e";
-
-                        resultBox.style.borderColor =
-                            "rgba(34, 197, 94, 0.4)";
-                    }
-
-
-                    confidenceText.textContent =
-                        "Confidence: " +
-                        confidence +
-                        "%";
+            ws.onerror = function () {
+                if (liveResultEl) {
+                    liveResultEl.textContent = "CONNECTION ERROR";
+                    liveResultEl.style.color = "#ef4444";
                 }
+            };
 
+        } catch (error) {
+            if (error.name === "NotAllowedError") {
+                alert("Microphone permission denied. Please allow access.");
+            } else {
+                alert("Error: " + error.message);
             }
-        );
-
+        }
     }
 
-}
+    function stopListening() {
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop();
+        }
+        if (ws) {
+            ws.close();
+            ws = null;
+        }
+        if (audioStream) {
+            audioStream.getTracks().forEach(function (track) { track.stop(); });
+            audioStream = null;
+        }
+        if (audioContext) {
+            audioContext.close();
+            audioContext = null;
+        }
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
 
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+
+        if (waveformEl) waveformEl.textContent = "Microphone stopped";
+        if (liveResultEl) {
+            liveResultEl.textContent = "STOPPED";
+            liveResultEl.style.color = "#94a3b8";
+        }
+    }
+
+    function animateWaveform() {
+        if (!analyser || !waveformEl) return;
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        function draw() {
+            analyser.getByteFrequencyData(dataArray);
+            let bars = "";
+            const chars = "▁▂▃▄▅▆▇█";
+            for (let i = 0; i < 40; i++) {
+                const val = dataArray[i * 3] || 0;
+                const idx = Math.floor((val / 255) * (chars.length - 1));
+                bars += chars[idx];
+            }
+            waveformEl.textContent = bars;
+            animationId = requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    function displayLiveResult(result) {
+        if (liveResultEl) {
+            const verdict = result.verdict.toUpperCase();
+            liveResultEl.textContent = verdict;
+            liveResultEl.style.color = result.verdict === "fake" ? "#ef4444" : "#22c55e";
+        }
+        if (confidenceBar) {
+            confidenceBar.value = Math.round(result.confidence * 100);
+        }
+        if (confidenceText) {
+            confidenceText.textContent = Math.round(result.confidence * 100) + "%";
+        }
+    }
+
+})();
 
 
 /* =========================================================
-   LIVE MICROPHONE
+   BLACKLIST — SEARCH & REPORT (blacklist.html)
 ========================================================= */
 
-const liveSection =
-    document.querySelector("#live");
+(function initBlacklist() {
 
+    const blacklistTable = document.querySelector("#blacklistTable");
 
-if (liveSection) {
-
-    const liveButtons =
-        liveSection.querySelectorAll(
-            "button"
-        );
-
-
-    const startMicButton =
-        liveButtons[0];
-
-
-    const stopMicButton =
-        liveButtons[1];
-
-
-    const waveform =
-        liveSection.querySelector(
-            "div:nth-of-type(2) > div"
-        );
-
-
-    const liveResult =
-        liveSection.querySelector(
-            "div:nth-of-type(4) strong"
-        );
-
-
-    const confidenceGauge =
-        liveSection.querySelector(
-            "progress"
-        );
-
-
-    const confidenceValue =
-        liveSection.querySelector(
-            "div:nth-of-type(3) p"
-        );
-
-
-    let microphoneStream =
-        null;
-
-
-    let waveformInterval =
-        null;
-
-
-    let confidenceInterval =
-        null;
-
-
-    /* =========================
-       START MICROPHONE
-    ========================== */
-
-    if (startMicButton) {
-
-        startMicButton.addEventListener(
-            "click",
-            async function () {
-
-                try {
-
-                    microphoneStream =
-                        await navigator.mediaDevices
-                            .getUserMedia({
-                                audio: true
-                            });
-
-
-                    startMicButton.disabled =
-                        true;
-
-
-                    if (stopMicButton) {
-
-                        stopMicButton.disabled =
-                            false;
-                    }
-
-
-                    if (liveResult) {
-
-                        liveResult.textContent =
-                            "LISTENING...";
-
-                        liveResult.style.color =
-                            "#3b82f6";
-                    }
-
-
-                    /* Waveform animation */
-
-                    if (waveform) {
-
-                        waveformInterval =
-                            setInterval(
-                                function () {
-
-                                    let bars = "";
-
-                                    for (
-                                        let i = 0;
-                                        i < 35;
-                                        i++
-                                    ) {
-
-                                        const height =
-                                            Math.floor(
-                                                Math.random() * 30
-                                            );
-
-
-                                        bars +=
-                                            "▂▃▄▅▆▇"
-                                            [height % 7];
-
-                                    }
-
-
-                                    waveform.textContent =
-                                        bars;
-
-                                },
-                                100
-                            );
-                    }
-
-
-                    /* Confidence */
-
-                    confidenceInterval =
-                        setInterval(
-                            function () {
-
-                                if (
-                                    !microphoneStream
-                                ) {
-
-                                    clearInterval(
-                                        confidenceInterval
-                                    );
-
-                                    return;
-                                }
-
-
-                                const confidence =
-                                    Math.floor(
-                                        Math.random() *
-                                        45 +
-                                        50
-                                    );
-
-
-                                if (
-                                    confidenceGauge
-                                ) {
-
-                                    confidenceGauge.value =
-                                        confidence;
-                                }
-
-
-                                if (
-                                    confidenceValue
-                                ) {
-
-                                    confidenceValue.textContent =
-                                        confidence +
-                                        "%";
-                                }
-
-                            },
-                            800
-                        );
-
-
-                } catch (error) {
-
-                    alert(
-                        "Microphone permission was denied."
-                    );
-
-                    console.error(error);
-
-                }
-
-            }
-        );
-
-    }
-
-
-    /* =========================
-       STOP MICROPHONE
-    ========================== */
-
-    if (stopMicButton) {
-
-        stopMicButton.disabled =
-            true;
-
-
-        stopMicButton.addEventListener(
-            "click",
-            function () {
-
-                if (microphoneStream) {
-
-                    microphoneStream
-                        .getTracks()
-                        .forEach(
-                            function (track) {
-
-                                track.stop();
-
-                            }
-                        );
-
-                    microphoneStream =
-                        null;
-                }
-
-
-                clearInterval(
-                    waveformInterval
-                );
-
-
-                clearInterval(
-                    confidenceInterval
-                );
-
-
-                if (waveform) {
-
-                    waveform.textContent =
-                        "Microphone stopped";
-                }
-
-
-                startMicButton.disabled =
-                    false;
-
-
-                stopMicButton.disabled =
-                    true;
-
-
-                if (liveResult) {
-
-                    liveResult.textContent =
-                        "STOPPED";
-
-                    liveResult.style.color =
-                        "#94a3b8";
-                }
-
-            }
-        );
-
-    }
-
-}
-
-
-
-/* =========================================================
-   CALLER BLACKLIST
-   This section works ONLY on blacklist.html
-========================================================= */
-
-const blacklistTable =
-    document.querySelector(
-        "#blacklistTable"
-    );
-
-
-if (blacklistTable) {
-
-
-    /* =========================
-       SEARCH
-    ========================== */
-
-    const searchForm =
-        document.getElementById(
-            "blacklistSearchForm"
-        );
-
-
-    const searchInput =
-        document.getElementById(
-            "search"
-        );
-
-
-    const searchResult =
-        document.getElementById(
-            "searchResult"
-        );
-
+    // === SEARCH ===
+    const searchForm = document.getElementById("blacklistSearchForm");
+    const searchInput = document.getElementById("search");
+    const searchResult = document.getElementById("searchResult");
 
     if (searchForm) {
+        searchForm.addEventListener("submit", async function (event) {
+            event.preventDefault();
 
-        searchForm.addEventListener(
-            "submit",
-            function (event) {
-
-                event.preventDefault();
-
-
-                const searchValue =
-                    searchInput
-                        ? searchInput.value
-                            .trim()
-                            .toLowerCase()
-                        : "";
-
-
-                const rows =
-                    Array.from(
-                        blacklistTable
-                            .querySelectorAll(
-                                "tbody tr"
-                            )
-                    );
-
-
-                if (!searchValue) {
-
-                    if (searchResult) {
-
-                        searchResult.style.display =
-                            "block";
-
-                        searchResult.innerHTML =
-                            `
-                            <strong style="color:#fcd34d;">
-                                ⚠️ Please enter a phone number.
-                            </strong>
-                            `;
-                    }
-
-                    return;
-                }
-
-
-                let found = false;
-
-
-                rows.forEach(
-                    function (row) {
-
-                        const rowText =
-                            row.textContent
-                                .toLowerCase();
-
-
-                        if (
-                            rowText.includes(
-                                searchValue
-                            )
-                        ) {
-
-                            row.style.display =
-                                "";
-
-                            found = true;
-
-                        } else {
-
-                            row.style.display =
-                                "none";
-                        }
-
-                    }
-                );
-
-
-                if (searchResult) {
-
-                    searchResult.style.display =
-                        "block";
-
-
-                    if (found) {
-
-                        searchResult.innerHTML =
-                            `
-                            <strong style="color:#fca5a5;">
-                                ⚠️ Number found in database
-                            </strong>
-                            <br>
-                            <span style="color:#94a3b8;">
-                                This number has been reported as suspicious.
-                            </span>
-                            `;
-
-                    } else {
-
-                        searchResult.innerHTML =
-                            `
-                            <strong style="color:#86efac;">
-                                ✓ No report found
-                            </strong>
-                            <br>
-                            <span style="color:#94a3b8;">
-                                This number was not found in the demo database.
-                            </span>
-                            `;
-                    }
-
-                }
-
+            const query = searchInput ? searchInput.value.trim() : "";
+            if (!query) {
+                showSearchResult("warning", "Please enter a phone number.");
+                return;
             }
-        );
 
+            try {
+                const response = await fetch(API_BASE + "/api/blacklist/check/" + encodeURIComponent(query));
+                const data = await response.json();
+
+                if (data.is_blacklisted) {
+                    showSearchResult("danger",
+                        "⚠️ Number found in database — " + data.status.toUpperCase() +
+                        "<br><span style='color:#94a3b8;font-size:0.75rem;'>Reported " + data.reports_count + " time(s) | Risk: " + data.risk_level.toUpperCase() + "</span>"
+                    );
+                } else {
+                    showSearchResult("safe",
+                        "✓ Number is clean<br><span style='color:#94a3b8;font-size:0.75rem;'>Not found in our database.</span>"
+                    );
+                }
+            } catch (error) {
+                showSearchResult("warning", "Failed to check. Is the backend running?");
+                console.error(error);
+            }
+        });
     }
 
+    function showSearchResult(type, html) {
+        if (!searchResult) return;
+        searchResult.style.display = "block";
 
+        const colors = {
+            danger: { color: "#fca5a5", border: "rgba(239,68,68,0.3)", bg: "rgba(239,68,68,0.05)" },
+            safe: { color: "#86efac", border: "rgba(34,197,94,0.3)", bg: "rgba(34,197,94,0.05)" },
+            warning: { color: "#fcd34d", border: "rgba(245,158,11,0.3)", bg: "rgba(245,158,11,0.05)" }
+        };
+        const c = colors[type] || colors.warning;
+        searchResult.style.borderColor = c.border;
+        searchResult.style.background = c.bg;
+        searchResult.innerHTML = '<strong style="color:' + c.color + ';">' + html + '</strong>';
+    }
 
-    /* =========================
-       REPORT FORM
-    ========================== */
-
-    const reportForm =
-        document.getElementById(
-            "reportForm"
-        );
-
+    // === REPORT ===
+    const reportForm = document.getElementById("reportForm");
 
     if (reportForm) {
+        reportForm.addEventListener("submit", async function (event) {
+            event.preventDefault();
 
-        reportForm.addEventListener(
-            "submit",
-            function (event) {
+            const phone = document.getElementById("phone");
+            const reason = document.getElementById("reason");
+            const description = document.getElementById("description");
 
-                event.preventDefault();
+            if (!phone || !phone.value.trim()) {
+                alert("Please enter a phone number.");
+                return;
+            }
+            if (!reason || !reason.value) {
+                alert("Please select a reason.");
+                return;
+            }
 
+            const btn = reportForm.querySelector("button[type='submit']");
+            if (btn) { btn.disabled = true; btn.textContent = "Submitting..."; }
 
-                const phone =
-                    document.getElementById(
-                        "phone"
-                    );
+            try {
+                const response = await fetch(API_BASE + "/api/blacklist/report", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        phone_number: phone.value.trim(),
+                        confidence_score: 0.85,
+                        notes: (reason.value || "") + ": " + (description ? description.value : "")
+                    })
+                });
 
+                if (!response.ok) throw new Error("Report failed");
 
-                const reason =
-                    document.getElementById(
-                        "reason"
-                    );
-
-
-                const description =
-                    document.getElementById(
-                        "description"
-                    );
-
-
-                if (
-                    !phone ||
-                    !reason ||
-                    !description
-                ) {
-
-                    return;
-                }
-
-
-                if (
-                    !phone.value.trim() ||
-                    !reason.value ||
-                    !description.value.trim()
-                ) {
-
-                    alert(
-                        "Please fill all the fields."
-                    );
-
-                    return;
-                }
-
-
-                alert(
-                    "✅ Report submitted successfully!"
-                );
-
-
+                alert("✅ Report submitted successfully! Number added to database.");
                 reportForm.reset();
+                loadBlacklistTable(); // Refresh table
 
+            } catch (error) {
+                alert("Failed to submit report. Is the backend running?");
+                console.error(error);
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = "Submit Report"; }
             }
-        );
-
+        });
     }
 
+    // === LOAD TABLE FROM API ===
+    async function loadBlacklistTable() {
+        if (!blacklistTable) return;
 
+        const tbody = blacklistTable.querySelector("tbody");
+        if (!tbody) return;
 
-    /* =========================
-       TABLE SORTING
-    ========================== */
+        try {
+            const response = await fetch(API_BASE + "/api/blacklist/list?page=1&page_size=20");
+            const data = await response.json();
 
-    const headers =
-        blacklistTable.querySelectorAll(
-            "thead th"
-        );
+            if (data.entries && data.entries.length > 0) {
+                tbody.innerHTML = "";
+                data.entries.forEach(function (entry) {
+                    const tr = document.createElement("tr");
 
+                    const riskClass = entry.status === "confirmed" ? "risk-high" :
+                        entry.reports_count >= 2 ? "risk-medium" : "risk-low";
+                    const riskLabel = entry.status === "confirmed" ? "HIGH" :
+                        entry.reports_count >= 2 ? "MEDIUM" : "LOW";
 
-    let sortDirection = {};
+                    const date = new Date(entry.last_reported);
+                    const dateStr = date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
+                    tr.innerHTML =
+                        "<td>" + entry.phone_number + "</td>" +
+                        '<td><b class="' + riskClass + '">' + riskLabel + "</b></td>" +
+                        "<td>" + entry.status.toUpperCase() + "</td>" +
+                        "<td>" + dateStr + "</td>";
 
-    headers.forEach(
-        function (
-            header,
-            columnIndex
-        ) {
+                    tbody.appendChild(tr);
+                });
+            }
+            // If no entries, keep the demo data as fallback
 
-            header.addEventListener(
-                "click",
-                function () {
-
-                    const tbody =
-                        blacklistTable
-                            .querySelector(
-                                "tbody"
-                            );
-
-
-                    const rows =
-                        Array.from(
-                            tbody.querySelectorAll(
-                                "tr"
-                            )
-                        );
-
-
-                    sortDirection[columnIndex] =
-                        !sortDirection[columnIndex];
-
-
-                    const direction =
-                        sortDirection[columnIndex]
-                            ? 1
-                            : -1;
-
-
-                    rows.sort(
-                        function (
-                            rowA,
-                            rowB
-                        ) {
-
-                            const valueA =
-                                rowA
-                                    .children[
-                                        columnIndex
-                                    ]
-                                    .textContent
-                                    .trim()
-                                    .toLowerCase();
-
-
-                            const valueB =
-                                rowB
-                                    .children[
-                                        columnIndex
-                                    ]
-                                    .textContent
-                                    .trim()
-                                    .toLowerCase();
-
-
-                            return (
-                                valueA.localeCompare(
-                                    valueB
-                                ) * direction
-                            );
-
-                        }
-                    );
-
-
-                    rows.forEach(
-                        function (row) {
-
-                            tbody.appendChild(
-                                row
-                            );
-
-                        }
-                    );
-
-
-                    /* Reset pagination */
-
-                    showBlacklistPage(
-                        1
-                    );
-
-                }
-            );
-
+        } catch (error) {
+            console.log("Could not load blacklist from API, using demo data.");
         }
-    );
+    }
 
+    // Load on page ready
+    if (blacklistTable) {
+        loadBlacklistTable();
+    }
 
+    // === TABLE SORTING ===
+    if (blacklistTable) {
+        const headers = blacklistTable.querySelectorAll("thead th");
+        let sortDirection = {};
 
-    /* =========================
-       PAGINATION
-    ========================== */
+        headers.forEach(function (header, columnIndex) {
+            header.addEventListener("click", function () {
+                const tbody = blacklistTable.querySelector("tbody");
+                const rows = Array.from(tbody.querySelectorAll("tr"));
 
-    const previousButton =
-        document.getElementById(
-            "previousPage"
-        );
+                sortDirection[columnIndex] = !sortDirection[columnIndex];
+                const direction = sortDirection[columnIndex] ? 1 : -1;
 
+                rows.sort(function (a, b) {
+                    const valA = a.children[columnIndex].textContent.trim().toLowerCase();
+                    const valB = b.children[columnIndex].textContent.trim().toLowerCase();
+                    return valA.localeCompare(valB) * direction;
+                });
 
-    const nextButton =
-        document.getElementById(
-            "nextPage"
-        );
+                rows.forEach(function (row) { tbody.appendChild(row); });
+            });
+        });
+    }
 
-
-    const pageButtons =
-        document.querySelectorAll(
-            ".page-number"
-        );
-
-
+    // === PAGINATION ===
+    const prevBtn = document.getElementById("previousPage");
+    const nextBtn = document.getElementById("nextPage");
+    const pageButtons = document.querySelectorAll(".page-number");
     let currentPage = 1;
+    const rowsPerPage = 5;
 
+    function showPage(page) {
+        if (!blacklistTable) return;
+        const rows = Array.from(blacklistTable.querySelectorAll("tbody tr"));
+        const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
 
-    const rowsPerPage = 3;
+        if (page < 1) page = 1;
+        if (page > totalPages) page = totalPages;
+        currentPage = page;
 
+        const start = (page - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
 
-    function getBlacklistRows() {
+        rows.forEach(function (row, i) {
+            row.style.display = (i >= start && i < end) ? "" : "none";
+        });
 
-        return Array.from(
-            blacklistTable.querySelectorAll(
-                "tbody tr"
-            )
-        );
+        pageButtons.forEach(function (btn) {
+            const p = Number(btn.dataset.page);
+            btn.classList.toggle("active-page", p === currentPage);
+            btn.style.display = p <= totalPages ? "" : "none";
+        });
 
+        if (prevBtn) prevBtn.disabled = currentPage === 1;
+        if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
     }
 
-
-    function showBlacklistPage(
-        page
-    ) {
-
-        const rows =
-            getBlacklistRows();
-
-
-        const totalPages =
-            Math.max(
-                1,
-                Math.ceil(
-                    rows.length /
-                    rowsPerPage
-                )
-            );
-
-
-        if (page < 1) {
-            page = 1;
-        }
-
-
-        if (page > totalPages) {
-            page = totalPages;
-        }
-
-
-        currentPage =
-            page;
-
-
-        const start =
-            (page - 1) *
-            rowsPerPage;
-
-
-        const end =
-            start +
-            rowsPerPage;
-
-
-        rows.forEach(
-            function (
-                row,
-                index
-            ) {
-
-                if (
-                    index >= start &&
-                    index < end
-                ) {
-
-                    row.style.display =
-                        "";
-
-                } else {
-
-                    row.style.display =
-                        "none";
-                }
-
-            }
-        );
-
-
-        /* Active page */
-
-        pageButtons.forEach(
-            function (
-                button
-            ) {
-
-                const buttonPage =
-                    Number(
-                        button.dataset.page
-                    );
-
-
-                button.classList.toggle(
-                    "active-page",
-                    buttonPage ===
-                    currentPage
-                );
-
-            }
-        );
-
-
-        /* Previous */
-
-        if (previousButton) {
-
-            previousButton.disabled =
-                currentPage === 1;
-        }
-
-
-        /* Next */
-
-        if (nextButton) {
-
-            nextButton.disabled =
-                currentPage >=
-                totalPages;
-        }
-
-
-        /* Hide unnecessary page buttons */
-
-        pageButtons.forEach(
-            function (
-                button
-            ) {
-
-                const pageNumber =
-                    Number(
-                        button.dataset.page
-                    );
-
-
-                button.style.display =
-                    pageNumber <= totalPages
-                        ? ""
-                        : "none";
-
-            }
-        );
-
-    }
-
-
-
-    /* Add page numbers */
-
-    pageButtons.forEach(
-        function (
-            button,
-            index
-        ) {
-
-            /*
-             * Your HTML has:
-             *
-             * 1
-             * 2
-             * 3
-             *
-             * We assign the page number
-             * automatically.
-             */
-
-            button.dataset.page =
-                index + 1;
-
-
-            button.addEventListener(
-                "click",
-                function () {
-
-                    showBlacklistPage(
-                        Number(
-                            button.dataset.page
-                        )
-                    );
-
-                }
-            );
-
-        }
-    );
-
-
-    /* Previous */
-
-    if (previousButton) {
-
-        previousButton.addEventListener(
-            "click",
-            function () {
-
-                showBlacklistPage(
-                    currentPage - 1
-                );
-
-            }
-        );
-
-    }
-
-
-    /* Next */
-
-    if (nextButton) {
-
-        nextButton.addEventListener(
-            "click",
-            function () {
-
-                showBlacklistPage(
-                    currentPage + 1
-                );
-
-            }
-        );
-
-    }
-
-
-    /* Start page */
-
-    showBlacklistPage(1);
-
-}
-
+    pageButtons.forEach(function (btn, i) {
+        btn.dataset.page = i + 1;
+        btn.addEventListener("click", function () {
+            showPage(Number(btn.dataset.page));
+        });
+    });
+
+    if (prevBtn) prevBtn.addEventListener("click", function () { showPage(currentPage - 1); });
+    if (nextBtn) nextBtn.addEventListener("click", function () { showPage(currentPage + 1); });
+
+    if (blacklistTable) showPage(1);
+
+})();
 
 
 /* =========================================================
-   SIMULATED CALL
+   SIMULATED CALL (index.html #call)
 ========================================================= */
 
-const callSection =
-    document.querySelector("#call");
+(function initCallSimulation() {
 
+    const callSection = document.querySelector("#call");
+    if (!callSection) return;
 
-if (callSection) {
+    const alertBox = document.querySelector("#callAlertBox");
+    const alertStrong = alertBox ? alertBox.querySelector("strong") : null;
+    const alertConfidence = document.querySelector("#callAlertConfidence");
+    const alertDescription = document.querySelector("#callAlertDescription");
+    const callerNumber = document.querySelector("#callerNumber");
 
-    const scenarioButtons =
-        callSection.querySelectorAll(
-            "button"
-        );
+    const fakeBtn = document.querySelector("#scenarioFake");
+    const realBtn = document.querySelector("#scenarioReal");
+    const suspiciousBtn = document.querySelector("#scenarioSuspicious");
+    const declineBtn = document.querySelector("#callDecline");
+    const acceptBtn = document.querySelector("#callAccept");
 
+    const scenarios = {
+        fake: {
+            number: "+91 87654 32100",
+            label: "⚠️ FAKE VOICE DETECTED",
+            confidence: "AI Confidence: 94%",
+            description: "This caller is using a synthetic or cloned voice.",
+            color: "#ef4444",
+            bg: "rgba(239, 68, 68, 0.08)",
+            border: "rgba(239, 68, 68, 0.35)"
+        },
+        real: {
+            number: "+91 98765 43210",
+            label: "✓ REAL VOICE VERIFIED",
+            confidence: "AI Confidence: 96%",
+            description: "Voice patterns match natural human speech.",
+            color: "#22c55e",
+            bg: "rgba(34, 197, 94, 0.08)",
+            border: "rgba(34, 197, 94, 0.35)"
+        },
+        suspicious: {
+            number: "+91 11111 22222",
+            label: "⚠️ SUSPICIOUS CALLER",
+            confidence: "AI Confidence: 72%",
+            description: "Unable to confirm authenticity. Exercise caution.",
+            color: "#f59e0b",
+            bg: "rgba(245, 158, 11, 0.08)",
+            border: "rgba(245, 158, 11, 0.35)"
+        }
+    };
 
-    const callAlert =
-        callSection.querySelector(
-            "div:first-of-type > div"
-        );
+    function loadScenario(type) {
+        const s = scenarios[type];
+        if (!s) return;
 
-
-    const callStrong =
-        callAlert
-            ? callAlert.querySelector(
-                "strong"
-            )
-            : null;
-
-
-    const callConfidence =
-        callAlert
-            ? callAlert.querySelector(
-                "p"
-            )
-            : null;
-
-
-    /* Fake Call */
-
-    if (scenarioButtons[2]) {
-
-        scenarioButtons[2].addEventListener(
-            "click",
-            function () {
-
-                if (callStrong) {
-
-                    callStrong.textContent =
-                        "⚠️ FAKE CALL DETECTED";
-
-                    callStrong.style.color =
-                        "#ef4444";
-                }
-
-
-                if (callConfidence) {
-
-                    callConfidence.textContent =
-                        "AI Confidence: 94%";
-                }
-
-
-                if (callAlert) {
-
-                    callAlert.style.background =
-                        "rgba(239, 68, 68, 0.1)";
-
-                    callAlert.style.borderColor =
-                        "rgba(239, 68, 68, 0.35)";
-                }
-
-            }
-        );
-
+        if (callerNumber) callerNumber.textContent = s.number;
+        if (alertStrong) { alertStrong.textContent = s.label; alertStrong.style.color = s.color; }
+        if (alertConfidence) alertConfidence.textContent = s.confidence;
+        if (alertDescription) alertDescription.textContent = s.description;
+        if (alertBox) { alertBox.style.background = s.bg; alertBox.style.borderColor = s.border; }
     }
 
+    if (fakeBtn) fakeBtn.addEventListener("click", function () { loadScenario("fake"); });
+    if (realBtn) realBtn.addEventListener("click", function () { loadScenario("real"); });
+    if (suspiciousBtn) suspiciousBtn.addEventListener("click", function () { loadScenario("suspicious"); });
 
-    /* Real Call */
-
-    if (scenarioButtons[3]) {
-
-        scenarioButtons[3].addEventListener(
-            "click",
-            function () {
-
-                if (callStrong) {
-
-                    callStrong.textContent =
-                        "✓ REAL CALL";
-
-                    callStrong.style.color =
-                        "#22c55e";
-                }
-
-
-                if (callConfidence) {
-
-                    callConfidence.textContent =
-                        "AI Confidence: 96%";
-                }
-
-
-                if (callAlert) {
-
-                    callAlert.style.background =
-                        "rgba(34, 197, 94, 0.1)";
-
-                    callAlert.style.borderColor =
-                        "rgba(34, 197, 94, 0.35)";
-                }
-
-            }
-        );
-
+    if (declineBtn) {
+        declineBtn.addEventListener("click", function () {
+            alert("Call declined. You are safe.");
+        });
     }
 
-
-    /* Suspicious Call */
-
-    if (scenarioButtons[4]) {
-
-        scenarioButtons[4].addEventListener(
-            "click",
-            function () {
-
-                if (callStrong) {
-
-                    callStrong.textContent =
-                        "⚠️ SUSPICIOUS CALL";
-
-                    callStrong.style.color =
-                        "#f59e0b";
+    if (acceptBtn) {
+        acceptBtn.addEventListener("click", async function () {
+            // Check blacklist before accepting
+            const number = callerNumber ? callerNumber.textContent.trim() : "";
+            if (number) {
+                try {
+                    const resp = await fetch(API_BASE + "/api/blacklist/check/" + encodeURIComponent(number));
+                    const data = await resp.json();
+                    if (data.is_blacklisted) {
+                        const proceed = confirm(
+                            "⚠️ WARNING: This number is in our blacklist!\n" +
+                            "Reported " + data.reports_count + " time(s).\n" +
+                            "Status: " + data.status.toUpperCase() + "\n\n" +
+                            "Do you still want to accept?"
+                        );
+                        if (!proceed) return;
+                    }
+                } catch (e) {
+                    // Backend not available, continue
                 }
-
-
-                if (callConfidence) {
-
-                    callConfidence.textContent =
-                        "AI Confidence: 72%";
-                }
-
-
-                if (callAlert) {
-
-                    callAlert.style.background =
-                        "rgba(245, 158, 11, 0.1)";
-
-                    callAlert.style.borderColor =
-                        "rgba(245, 158, 11, 0.35)";
-                }
-
             }
-        );
-
+            alert("Call accepted. AI monitoring active.");
+        });
     }
 
+    // Load default scenario
+    loadScenario("fake");
 
-    /* Call controls */
-
-    const declineButton =
-        scenarioButtons[0];
-
-
-    const acceptButton =
-        scenarioButtons[1];
-
-
-    if (declineButton) {
-
-        declineButton.addEventListener(
-            "click",
-            function () {
-
-                alert(
-                    "Call declined."
-                );
-
-            }
-        );
-
-    }
-
-
-    if (acceptButton) {
-
-        acceptButton.addEventListener(
-            "click",
-            function () {
-
-                alert(
-                    "Call accepted."
-                );
-
-            }
-        );
-
-    }
-
-}
-
+})();
 
 
 /* =========================================================
    CONTACT FORM
 ========================================================= */
 
-const contactForm =
-    document.querySelector(
-        "#contact form"
-    );
+(function initContact() {
+    const contactForm = document.querySelector("#contact form");
+    if (!contactForm) return;
 
-
-if (contactForm) {
-
-    contactForm.addEventListener(
-        "submit",
-        function (event) {
-
-            event.preventDefault();
-
-
-            const name =
-                document.querySelector(
-                    "#name"
-                );
-
-
-            const email =
-                document.querySelector(
-                    "#email"
-                );
-
-
-            const message =
-                document.querySelector(
-                    "#message"
-                );
-
-
-            if (
-                !name ||
-                !email ||
-                !message
-            ) {
-
-                return;
-            }
-
-
-            if (
-                !name.value ||
-                !email.value ||
-                !message.value
-            ) {
-
-                alert(
-                    "Please fill all fields."
-                );
-
-                return;
-            }
-
-
-            alert(
-                "Thank you, " +
-                name.value +
-                "! Your message has been submitted."
-            );
-
-
+    contactForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        const name = document.querySelector("#name");
+        if (name && name.value) {
+            alert("Thank you, " + name.value + "! Your message has been received.");
             contactForm.reset();
-
+        } else {
+            alert("Please fill all fields.");
         }
-    );
-
-}
-
+    });
+})();
 
 
 /* =========================================================
    SMOOTH NAVIGATION
 ========================================================= */
 
-document
-    .querySelectorAll(
-        "nav a, footer a"
-    )
-    .forEach(
-        function (link) {
-
-            link.addEventListener(
-                "click",
-                function (event) {
-
-                    const targetID =
-                        link.getAttribute(
-                            "href"
-                        );
-
-
-                    /*
-                     * Only handle links that
-                     * are actual same-page anchors.
-                     *
-                     * blacklist.html and index.html
-                     * will work normally.
-                     */
-
-                    if (
-                        targetID &&
-                        targetID.startsWith("#")
-                    ) {
-
-                        const target =
-                            document.querySelector(
-                                targetID
-                            );
-
-
-                        if (target) {
-
-                            event.preventDefault();
-
-
-                            target.scrollIntoView({
-                                behavior: "smooth"
-                            });
-
-                        }
-
-                    }
-
-                }
-            );
-
+document.querySelectorAll("nav a, footer a").forEach(function (link) {
+    link.addEventListener("click", function (event) {
+        const href = link.getAttribute("href");
+        if (href && href.startsWith("#")) {
+            const target = document.querySelector(href);
+            if (target) {
+                event.preventDefault();
+                target.scrollIntoView({ behavior: "smooth" });
+            }
         }
-    );
-
+    });
+});
 
 
 /* =========================================================
-   INITIAL MESSAGE
+   INIT
 ========================================================= */
 
-console.log(
-    "VoxShield AI frontend loaded successfully."
-);
+console.log("VoxShield AI frontend loaded — connected to backend API.");
