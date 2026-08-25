@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScamTrap AI — VoxShield AI</title>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .trap-hero h1 {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            letter-spacing: -0.04em;
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .config-option {
+            padding: 16px;
+            border-radius: 12px;
+            background: rgba(15,23,42,0.6);
+            border: 2px solid rgba(96,165,250,0.15);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        .config-option:hover {
+            border-color: rgba(59,130,246,0.4);
+            transform: translateY(-2px);
+        }
+        .config-option.selected {
+            border-color: #3b82f6;
+            background: rgba(59,130,246,0.1);
+            box-shadow: 0 0 20px rgba(59,130,246,0.15);
+        }
+        .config-option .avatar {
+            font-size: 2rem;
+            margin-bottom: 6px;
+        }
+        .config-option .name {
+            color: white;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+        .config-option .desc {
+            color: #64748b;
+            font-size: 0.7rem;
+            margin-top: 4px;
+        }
+        .chat-container {
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 20px;
+            border-radius: 15px;
+            background: rgba(2,6,23,0.8);
+            border: 1px solid rgba(96,165,250,0.1);
+            scroll-behavior: smooth;
+        }
+        .chat-message {
+            margin: 12px 0;
+            padding: 12px 16px;
+            border-radius: 12px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .msg-scammer {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.25);
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+        .msg-scammer .sender {
+            color: #ef4444;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .msg-ai {
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.25);
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        .msg-ai .sender {
+            color: #22c55e;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .msg-text {
+            color: #e2e8f0;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        .timer-display {
+            text-align: center;
+            padding: 20px;
+            border-radius: 15px;
+            background: radial-gradient(circle, rgba(245,158,11,0.1), rgba(2,6,23,0.8));
+            border: 1px solid rgba(245,158,11,0.2);
+        }
+        .timer-value {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #f59e0b;
+            font-family: 'Courier New', monospace;
+        }
+        .timer-label {
+            color: #94a3b8;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 4px;
+        }
+        .intel-panel {
+            margin-top: 15px;
+        }
+        .intel-tag {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 4px;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #fca5a5;
+        }
+        .impact-banner {
+            text-align: center;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 15px;
+            background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(239,68,68,0.1));
+            border: 1px solid rgba(245,158,11,0.3);
+        }
+        .impact-banner h3 {
+            color: #f59e0b;
+            font-size: 1.2rem;
+        }
+        .impact-stat {
+            display: inline-block;
+            margin: 10px 15px;
+            text-align: center;
+        }
+        .impact-stat .number {
+            font-size: 2rem;
+            font-weight: 900;
+            color: white;
+        }
+        .impact-stat .label {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+        }
+        .typing-indicator {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 12px;
+            background: rgba(34,197,94,0.1);
+            border: 1px solid rgba(34,197,94,0.2);
+            margin-left: auto;
+        }
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            margin: 0 2px;
+            animation: typing 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+            30% { opacity: 1; transform: translateY(-4px); }
+        }
+        @media (max-width: 599px) {
+            .config-grid { grid-template-columns: 1fr; }
+            .chat-message { max-width: 90%; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="logo">🛡️ VoxShield AI</div>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/#detect">Detect</a>
+            <a href="/decloak.html">De-Cloak</a>
+            <a href="/blacklist.html">Blacklist</a>
+            <a href="/scamtrap.html">ScamTrap</a>
+        </nav>
+    </header>
+
+    <main>
+        <section style="width:min(100%,900px);margin:auto;padding:80px 20px;">
+
+            <!-- HERO -->
+            <div class="trap-hero" style="text-align:center;margin-bottom:30px;">
+                <p class="hero-label">AI COUNTER-ATTACK</p>
+                <h1>ScamTrap AI</h1>
+                <p style="color:#94a3b8;max-width:600px;margin:15px auto;line-height:1.7;">
+                    When a scam call is detected, deploy an AI persona that <strong style="color:#f59e0b;">fights back</strong> — 
+                    engaging the scammer in conversation, wasting their time, and collecting evidence of their tactics.
+                </p>
+                <p style="color:#64748b;font-size:0.8rem;margin-top:8px;">
+                    Every minute wasted = a minute they can't scam a real victim.
+                </p>
+            </div>
+
+            <!-- SETUP PANEL (shown before conversation starts) -->
+            <div id="setupPanel">
+
+                <!-- Persona Selection -->
+                <div class="blacklist-card">
+                    <h2>Choose AI Persona</h2>
+                    <p>Select who the scammer thinks they're talking to:</p>
+
+                    <div class="config-grid" id="personaGrid">
+                        <div class="config-option selected" data-persona="elderly_grandma" onclick="selectPersona(this)">
+                            <div class="avatar">👵</div>
+                            <div class="name">Kamla Devi, 72</div>
+                            <div class="desc">Confused grandma, hard of hearing, tells long stories</div>
+                        </div>
+                        <div class="config-option" data-persona="nervous_uncle" onclick="selectPersona(this)">
+                            <div class="avatar">👨</div>
+                            <div class="name">Rajesh Kumar, 58</div>
+                            <div class="desc">Nervous, asks for proof, keeps stalling</div>
+                        </div>
+                        <div class="config-option" data-persona="chatty_student" onclick="selectPersona(this)">
+                            <div class="avatar">👩</div>
+                            <div class="name">Priya Sharma, 21</div>
+                            <div class="desc">Goes off-topic, asks random questions, never shuts up</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scenario Selection -->
+                <div class="blacklist-card">
+                    <h2>Scam Scenario</h2>
+                    <p>What type of scam is the caller attempting?</p>
+
+                    <div class="config-grid" id="scenarioGrid">
+                        <div class="config-option selected" data-scenario="bank_fraud" onclick="selectScenario(this)">
+                            <div class="avatar">🏦</div>
+                            <div class="name">Bank Fraud</div>
+                            <div class="desc">Fake bank officer asking for OTP/account details</div>
+                        </div>
+                        <div class="config-option" data-scenario="kidnapping_ransom" onclick="selectScenario(this)">
+                            <div class="avatar">🚨</div>
+                            <div class="name">Kidnapping Ransom</div>
+                            <div class="desc">Fake emergency demanding money transfer</div>
+                        </div>
+                        <div class="config-option" data-scenario="tech_support" onclick="selectScenario(this)">
+                            <div class="avatar">💻</div>
+                            <div class="name">Tech Support</div>
+                            <div class="desc">Fake Microsoft/tech support asking for remote access</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deploy Button -->
+                <div style="text-align:center;margin-top:20px;">
+                    <button type="button" id="deployBtn" onclick="deployTrap()"
+                        style="background:linear-gradient(135deg,#f59e0b,#d97706);font-size:1rem;padding:16px 35px;">
+                        🪤 Deploy ScamTrap AI
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- CONVERSATION PANEL (shown after deploy) -->
+            <div id="conversationPanel" style="display:none;">
+
+                <!-- Timer + Stats Bar -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;">
+                    <div class="timer-display">
+                        <div class="timer-value" id="timerValue">00:00</div>
+                        <div class="timer-label">Time Wasted</div>
+                    </div>
+                    <div class="timer-display" style="border-color:rgba(239,68,68,0.2);background:radial-gradient(circle,rgba(239,68,68,0.08),rgba(2,6,23,0.8));">
+                        <div class="timer-value" id="turnsValue" style="color:#ef4444;">0</div>
+                        <div class="timer-label">Exchanges</div>
+                    </div>
+                    <div class="timer-display" style="border-color:rgba(34,197,94,0.2);background:radial-gradient(circle,rgba(34,197,94,0.08),rgba(2,6,23,0.8));">
+                        <div class="timer-value" id="tacticsValue" style="color:#22c55e;">0</div>
+                        <div class="timer-label">Tactics Found</div>
+                    </div>
+                </div>
+
+                <!-- Chat -->
+                <div class="blacklist-card" style="padding:0;overflow:hidden;">
+                    <div style="padding:15px 20px;border-bottom:1px solid rgba(96,165,250,0.1);display:flex;align-items:center;justify-content:space-between;">
+                        <div>
+                            <span id="personaAvatar">👵</span>
+                            <strong id="personaName" style="color:white;margin-left:8px;">Kamla Devi</strong>
+                            <span style="color:#22c55e;font-size:0.7rem;margin-left:8px;">● AI ACTIVE</span>
+                        </div>
+                        <span style="color:#ef4444;font-size:0.7rem;font-weight:700;">VS SCAMMER</span>
+                    </div>
+                    <div class="chat-container" id="chatContainer"></div>
+                </div>
+
+                <!-- Intelligence Panel -->
+                <div class="blacklist-card">
+                    <h2>Intelligence Collected</h2>
+                    <p>Tactics and patterns identified from scammer's behavior:</p>
+                    <div class="intel-panel" id="intelPanel">
+                        <p style="color:#64748b;">Monitoring scammer's tactics...</p>
+                    </div>
+                </div>
+
+                <!-- Impact Statement (shown at end) -->
+                <div class="impact-banner" id="impactBanner" style="display:none;">
+                    <h3>🪤 ScamTrap Session Complete</h3>
+                    <p id="impactText" style="color:#cbd5e1;margin-top:10px;line-height:1.6;"></p>
+                    <div style="margin-top:15px;">
+                        <div class="impact-stat">
+                            <div class="number" id="impactTime">0:00</div>
+                            <div class="label">Time Wasted</div>
+                        </div>
+                        <div class="impact-stat">
+                            <div class="number" id="impactTurns">0</div>
+                            <div class="label">Exchanges</div>
+                        </div>
+                        <div class="impact-stat">
+                            <div class="number" id="impactTactics">0</div>
+                            <div class="label">Tactics Logged</div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="resetTrap()" style="margin-top:20px;background:linear-gradient(135deg,#3b82f6,#2563eb);">
+                        Run Another Scenario
+                    </button>
+                </div>
+
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+    const API = "";
+    let selectedPersona = "elderly_grandma";
+    let selectedScenario = "bank_fraud";
+    let conversationTimer = null;
+    let timerSeconds = 0;
+
+    function selectPersona(el) {
+        document.querySelectorAll("#personaGrid .config-option").forEach(function(o) { o.classList.remove("selected"); });
+        el.classList.add("selected");
+        selectedPersona = el.dataset.persona;
+    }
+
+    function selectScenario(el) {
+        document.querySelectorAll("#scenarioGrid .config-option").forEach(function(o) { o.classList.remove("selected"); });
+        el.classList.add("selected");
+        selectedScenario = el.dataset.scenario;
+    }
+
+    async function deployTrap() {
+        const btn = document.getElementById("deployBtn");
+        btn.disabled = true;
+        btn.textContent = "🪤 Deploying...";
+
+        try {
+            const r = await fetch(API + "/api/scamtrap/auto", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    scenario_id: selectedScenario,
+                    persona_id: selectedPersona
+                })
+            });
+
+            if (!r.ok) throw new Error("Failed to start trap");
+
+            const data = await r.json();
+
+            // Switch to conversation view
+            document.getElementById("setupPanel").style.display = "none";
+            document.getElementById("conversationPanel").style.display = "block";
+
+            // Set persona info
+            document.getElementById("personaAvatar").textContent = data.persona.avatar;
+            document.getElementById("personaName").textContent = data.persona.name;
+
+            // Animate the conversation
+            animateConversation(data);
+
+        } catch(err) {
+            alert("Error: " + err.message);
+            btn.disabled = false;
+            btn.textContent = "🪤 Deploy ScamTrap AI";
+        }
+    }
+
+    function animateConversation(data) {
+        const chat = document.getElementById("chatContainer");
+        const conversation = data.conversation;
+        const persona = data.persona;
+        let msgIndex = 0;
+
+        // Start timer
+        timerSeconds = 0;
+        conversationTimer = setInterval(function() {
+            timerSeconds++;
+            document.getElementById("timerValue").textContent = formatTime(timerSeconds);
+        }, 1000);
+
+        // Animate messages one by one
+        function showNextMessage() {
+            if (msgIndex >= conversation.length) {
+                // Conversation ended
+                clearInterval(conversationTimer);
+                showImpact(data);
+                return;
+            }
+
+            const msg = conversation[msgIndex];
+            const isScammer = msg.role === "scammer";
+
+            // Show typing indicator first
+            const typingDiv = document.createElement("div");
+            typingDiv.className = "typing-indicator";
+            typingDiv.style.display = "block";
+            typingDiv.style.marginLeft = isScammer ? "0" : "auto";
+            typingDiv.style.marginRight = isScammer ? "auto" : "0";
+            typingDiv.style.width = "fit-content";
+            typingDiv.innerHTML = "<span></span><span></span><span></span>";
+            chat.appendChild(typingDiv);
+            chat.scrollTop = chat.scrollHeight;
+
+            // After delay, show actual message
+            const delay = isScammer ? 1500 : 2500; // AI takes longer (realistic)
+            setTimeout(function() {
+                chat.removeChild(typingDiv);
+
+                const div = document.createElement("div");
+                div.className = "chat-message " + (isScammer ? "msg-scammer" : "msg-ai");
+                div.innerHTML =
+                    '<div class="sender">' + (isScammer ? "🔴 SCAMMER" : persona.avatar + " " + persona.name + " (AI)") + '</div>' +
+                    '<div class="msg-text">' + msg.message + '</div>';
+                chat.appendChild(div);
+                chat.scrollTop = chat.scrollHeight;
+
+                // Update stats
+                if (!isScammer) {
+                    const turns = Math.ceil((msgIndex + 1) / 2);
+                    document.getElementById("turnsValue").textContent = turns;
+                }
+
+                msgIndex++;
+                // Next message after a realistic delay
+                const nextDelay = isScammer ? 2000 : 3000;
+                setTimeout(showNextMessage, nextDelay);
+            }, delay);
+        }
+
+        showNextMessage();
+
+        // Show tactics as they're detected
+        const intelPanel = document.getElementById("intelPanel");
+        const allTactics = data.intelligence.tactics_detected;
+        let tacticIdx = 0;
+
+        const tacticInterval = setInterval(function() {
+            if (tacticIdx >= allTactics.length) {
+                clearInterval(tacticInterval);
+                return;
+            }
+            if (tacticIdx === 0) intelPanel.innerHTML = "";
+
+            const tag = document.createElement("span");
+            tag.className = "intel-tag";
+            tag.textContent = allTactics[tacticIdx].replace(/_/g, " ");
+            intelPanel.appendChild(tag);
+            document.getElementById("tacticsValue").textContent = tacticIdx + 1;
+            tacticIdx++;
+        }, 5000);
+    }
+
+    function showImpact(data) {
+        const banner = document.getElementById("impactBanner");
+        banner.style.display = "block";
+
+        const totalSec = data.total_time_wasted_seconds;
+        document.getElementById("impactTime").textContent = data.total_time_wasted_formatted;
+        document.getElementById("impactTurns").textContent = data.turns;
+        document.getElementById("impactTactics").textContent = data.intelligence.tactics_count;
+        document.getElementById("impactText").textContent = data.impact_statement;
+
+        // Update timer to final value
+        document.getElementById("timerValue").textContent = formatTime(totalSec);
+    }
+
+    function resetTrap() {
+        document.getElementById("setupPanel").style.display = "block";
+        document.getElementById("conversationPanel").style.display = "none";
+        document.getElementById("chatContainer").innerHTML = "";
+        document.getElementById("intelPanel").innerHTML = '<p style="color:#64748b;">Monitoring scammer\'s tactics...</p>';
+        document.getElementById("impactBanner").style.display = "none";
+        document.getElementById("timerValue").textContent = "00:00";
+        document.getElementById("turnsValue").textContent = "0";
+        document.getElementById("tacticsValue").textContent = "0";
+        timerSeconds = 0;
+
+        const btn = document.getElementById("deployBtn");
+        btn.disabled = false;
+        btn.textContent = "🪤 Deploy ScamTrap AI";
+    }
+
+    function formatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0");
+    }
+    </script>
+
+</body>
+</html>

@@ -10,7 +10,7 @@ import os
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
-from app.routers import detect, blacklist, websocket_stream, demo, decloak
+from app.routers import detect, blacklist, websocket_stream, demo, decloak, scamtrap
 
 app = FastAPI(
     title="VoiceShield API",
@@ -32,6 +32,7 @@ app.include_router(detect.router, prefix="/api", tags=["Detection"])
 app.include_router(blacklist.router, prefix="/api/blacklist", tags=["Blacklist"])
 app.include_router(demo.router, prefix="/api", tags=["Demo"])
 app.include_router(decloak.router, prefix="/api", tags=["De-Cloaking"])
+app.include_router(scamtrap.router, prefix="/api", tags=["ScamTrap"])
 app.include_router(websocket_stream.router, tags=["WebSocket"])
 
 # Static frontend directory
@@ -56,6 +57,11 @@ async def serve_blacklist():
 @app.get("/decloak.html")
 async def serve_decloak():
     return FileResponse(os.path.join(STATIC_DIR, "decloak.html"))
+
+
+@app.get("/scamtrap.html")
+async def serve_scamtrap():
+    return FileResponse(os.path.join(STATIC_DIR, "scamtrap.html"))
 
 
 # Mount static assets LAST (CSS, JS, images at /static/)
