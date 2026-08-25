@@ -7,27 +7,18 @@ venv/
 env/
 .venv/
 
-# Node
+# Node (no longer used but just in case)
 node_modules/
 dist/
-.vite/
 
 # ML model weights (too large for git)
 ml/models/*.pth
 ml/models/*.pt
 ml/models/*.bin
 
-# Database
+# Database (auto-created on start)
 *.db
 *.sqlite3
-
-# Audio data (too large for git)
-data/real/*.wav
-data/real/*.mp3
-data/synthetic/*.wav
-data/synthetic/*.mp3
-data/test_pairs/*.wav
-data/test_pairs/*.mp3
 
 # Environment
 .env
