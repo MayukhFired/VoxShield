@@ -31,6 +31,7 @@ app.add_middleware(
 app.include_router(detect.router, prefix="/api", tags=["Detection"])
 app.include_router(blacklist.router, prefix="/api/blacklist", tags=["Blacklist"])
 app.include_router(demo.router, prefix="/api", tags=["Demo"])
+app.include_router(decloak.router, prefix="/api", tags=["De-Cloaking"])
 app.include_router(websocket_stream.router, tags=["WebSocket"])
 
 # Static frontend directory
