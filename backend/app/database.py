@@ -198,3 +198,254 @@ async def search_blacklist(query: str):
 
 # Initialize database on module import
 init_db()
+
+
+# =========================================================
+# SCAMMER VOICEPRINT DATABASE
+# =========================================================
+
+def init_voiceprint_db():
+    """Initialize the voiceprint/de-cloaking tables."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS scammer_voiceprints (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fingerprint_hash TEXT NOT NULL,
+            fingerprint_vector TEXT NOT NULL,
+            confidence REAL DEFAULT 0.0,
+            first_seen TEXT NOT NULL,
+            last_seen TEXT NOT NULL,
+            times_seen INTEGER DEFAULT 1,
+            linked_numbers TEXT DEFAULT '[]',
+            status TEXT DEFAULT 'active'
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS decloak_cases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            voiceprint_id INTEGER,
+            phone_number TEXT,
+            detection_verdict TEXT,
+            detection_confidence REAL,
+            voiceprint_confidence REAL,
+            matched_existing INTEGER DEFAULT 0,
+            similarity_score REAL DEFAULT 0.0,
+            timestamp TEXT NOT NULL,
+            FOREIGN KEY (voiceprint_id) REFERENCES scammer_voiceprints(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_fp_hash
+        ON scammer_voiceprints(fingerprint_hash)
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+async def store_voiceprint(fingerprint_hash: str, fingerprint_vector: list, confidence: float, phone_number: Optional[str] = None) -> dict:
+    """Store a new scammer voiceprint or update if similar one exists."""
+    import json
+    conn = get_connection()
+    cursor = conn.cursor()
+    now = datetime.utcnow().isoformat()
+
+    try:
+        # Check if this exact hash already exists
+        cursor.execute(
+            "SELECT * FROM scammer_voiceprints WHERE fingerprint_hash = ?",
+            (fingerprint_hash,)
+        )
+        existing = cursor.fetchone()
+
+        if existing:
+            # Update existing record
+            times = existing["times_seen"] + 1
+            linked = json.loads(existing["linked_numbers"])
+            if phone_number and phone_number not in linked:
+                linked.append(phone_number)
+
+            cursor.execute("""
+                UPDATE scammer_voiceprints
+                SET last_seen = ?, times_seen = ?, linked_numbers = ?,
+                    confidence = MAX(confidence, ?)
+                WHERE id = ?
+            """, (now, times, json.dumps(linked), confidence, existing["id"]))
+
+            conn.commit()
+            voiceprint_id = existing["id"]
+            is_new = False
+        else:
+            # Insert new voiceprint
+            linked = json.dumps([phone_number] if phone_number else [])
+            cursor.execute("""
+                INSERT INTO scammer_voiceprints
+                (fingerprint_hash, fingerprint_vector, confidence, first_seen, last_seen, times_seen, linked_numbers, status)
+                VALUES (?, ?, ?, ?, ?, 1, ?, 'active')
+            """, (fingerprint_hash, json.dumps(fingerprint_vector), confidence, now, now, linked))
+
+            conn.commit()
+            voiceprint_id = cursor.lastrowid
+            is_new = True
+
+        return {
+            "voiceprint_id": voiceprint_id,
+            "is_new": is_new,
+            "times_seen": 1 if is_new else existing["times_seen"] + 1,
+        }
+
+    finally:
+        conn.close()
+
+
+async def find_similar_voiceprints(fingerprint_vector: list, threshold: float = 0.65) -> list:
+    """
+    Find voiceprints in the database that are similar to the given vector.
+    Uses cosine similarity comparison against all stored voiceprints.
+    """
+    import json
+    import numpy as np
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT * FROM scammer_voiceprints")
+        all_prints = cursor.fetchall()
+
+        if not all_prints:
+            return []
+
+        query_vec = np.array(fingerprint_vector)
+        query_norm = np.linalg.norm(query_vec)
+        if query_norm == 0:
+            return []
+        query_vec = query_vec / query_norm
+
+        matches = []
+        for row in all_prints:
+            stored_vec = np.array(json.loads(row["fingerprint_vector"]))
+            stored_norm = np.linalg.norm(stored_vec)
+            if stored_norm == 0:
+                continue
+            stored_vec = stored_vec / stored_norm
+
+            # Cosine similarity
+            min_len = min(len(query_vec), len(stored_vec))
+            similarity = float(np.dot(query_vec[:min_len], stored_vec[:min_len]))
+            # Scale to 0-1
+            similarity = (similarity + 1) / 2
+
+            if similarity >= threshold:
+                matches.append({
+                    "voiceprint_id": row["id"],
+                    "similarity": round(similarity, 4),
+                    "times_seen": row["times_seen"],
+                    "first_seen": row["first_seen"],
+                    "last_seen": row["last_seen"],
+                    "linked_numbers": json.loads(row["linked_numbers"]),
+                    "status": row["status"],
+                    "fingerprint_hash": row["fingerprint_hash"],
+                })
+
+        # Sort by similarity descending
+        matches.sort(key=lambda x: x["similarity"], reverse=True)
+        return matches[:10]  # Top 10 matches
+
+    finally:
+        conn.close()
+
+
+async def record_decloak_case(voiceprint_id: int, phone_number: Optional[str], detection_verdict: str,
+                               detection_confidence: float, voiceprint_confidence: float,
+                               matched_existing: bool, similarity_score: float) -> int:
+    """Record a de-cloaking case for audit trail."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    now = datetime.utcnow().isoformat()
+
+    try:
+        cursor.execute("""
+            INSERT INTO decloak_cases
+            (voiceprint_id, phone_number, detection_verdict, detection_confidence,
+             voiceprint_confidence, matched_existing, similarity_score, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (voiceprint_id, phone_number, detection_verdict, detection_confidence,
+              voiceprint_confidence, 1 if matched_existing else 0, similarity_score, now))
+
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()
+
+
+async def get_scammer_profile(voiceprint_id: int) -> Optional[dict]:
+    """Get full scammer profile by voiceprint ID."""
+    import json
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT * FROM scammer_voiceprints WHERE id = ?", (voiceprint_id,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        # Get all cases for this voiceprint
+        cursor.execute(
+            "SELECT * FROM decloak_cases WHERE voiceprint_id = ? ORDER BY timestamp DESC",
+            (voiceprint_id,)
+        )
+        cases = [dict(c) for c in cursor.fetchall()]
+
+        return {
+            "voiceprint_id": row["id"],
+            "fingerprint_hash": row["fingerprint_hash"],
+            "confidence": row["confidence"],
+            "first_seen": row["first_seen"],
+            "last_seen": row["last_seen"],
+            "times_seen": row["times_seen"],
+            "linked_numbers": json.loads(row["linked_numbers"]),
+            "status": row["status"],
+            "cases": cases,
+            "total_victims_targeted": len(cases),
+        }
+    finally:
+        conn.close()
+
+
+async def get_decloak_stats() -> dict:
+    """Get overall de-cloaking statistics."""
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT COUNT(*) as total FROM scammer_voiceprints")
+        total_prints = cursor.fetchone()["total"]
+
+        cursor.execute("SELECT COUNT(*) as total FROM decloak_cases")
+        total_cases = cursor.fetchone()["total"]
+
+        cursor.execute("SELECT COUNT(*) as total FROM decloak_cases WHERE matched_existing = 1")
+        total_matches = cursor.fetchone()["total"]
+
+        cursor.execute("SELECT MAX(times_seen) as max_seen FROM scammer_voiceprints")
+        row = cursor.fetchone()
+        most_seen = row["max_seen"] if row["max_seen"] else 0
+
+        return {
+            "total_scammer_voiceprints": total_prints,
+            "total_decloak_cases": total_cases,
+            "cross_case_matches": total_matches,
+            "most_prolific_scammer_cases": most_seen,
+        }
+    finally:
+        conn.close()
+
+
+# Initialize voiceprint tables
+init_voiceprint_db()
