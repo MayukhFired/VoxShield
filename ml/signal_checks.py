@@ -286,8 +286,8 @@ def check_spectral_cutoff(audio: np.ndarray, sr: int = 16000) -> Dict[str, Any]:
         dropoff_high_to_very_high = high_energy - very_high_energy
         
         # Natural speech: gradual rolloff (dropoff < 30dB between bands)
-        # Synthetic: sharp cutoff (dropoff > 35dB, especially in high bands)
-        is_natural = dropoff_mid_to_high < 35 and dropoff_high_to_very_high < 25
+        # Synthetic: sharp cutoff (dropoff > 20dB in high bands)
+        is_natural = dropoff_mid_to_high < 30 and dropoff_high_to_very_high < 20
         
         # Score
         score = 1.0 - min(1.0, max(0.0, (dropoff_high_to_very_high - 10) / 30))

@@ -10,7 +10,7 @@ import os
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
 
-from app.routers import detect, blacklist, websocket_stream
+from app.routers import detect, blacklist, websocket_stream, demo
 
 app = FastAPI(
     title="VoiceShield API",
@@ -30,6 +30,7 @@ app.add_middleware(
 # Include API routers
 app.include_router(detect.router, prefix="/api", tags=["Detection"])
 app.include_router(blacklist.router, prefix="/api/blacklist", tags=["Blacklist"])
+app.include_router(demo.router, prefix="/api", tags=["Demo"])
 app.include_router(websocket_stream.router, tags=["WebSocket"])
 
 # Static frontend directory

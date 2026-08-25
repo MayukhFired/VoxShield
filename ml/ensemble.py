@@ -84,10 +84,17 @@ class EnsembleDetector:
         # AASIST score: convert to "realness" score (1.0 = definitely real)
         if aasist_result["label"] in ("error", "neutral"):
             aasist_realness = 0.5  # Neutral if model fails or unavailable
+            # When model is unavailable, rely 100% on signal checks
+            aasist_weight = 0.0
+            signal_weight = 1.0
         elif aasist_result["label"] == "real":
             aasist_realness = aasist_result["confidence"]
+            aasist_weight = self.AASIST_WEIGHT
+            signal_weight = self.SIGNAL_WEIGHT
         else:
             aasist_realness = 1.0 - aasist_result["confidence"]
+            aasist_weight = self.AASIST_WEIGHT
+            signal_weight = self.SIGNAL_WEIGHT
         
         # Signal checks combined score
         signal_combined = 0.0
@@ -95,10 +102,15 @@ class EnsembleDetector:
             weight = self.CHECK_WEIGHTS.get(check["check_name"], 0.25)
             signal_combined += check["score"] * weight
         
+        # Penalty: if majority of checks fail, reduce score further
+        checks_failed = sum(1 for c in signal_results if not c["passed"])
+        if checks_failed >= 3:
+            signal_combined *= 0.6  # Strong penalty for multiple failures
+        
         # Ensemble weighted score
         ensemble_score = (
-            aasist_realness * self.AASIST_WEIGHT +
-            signal_combined * self.SIGNAL_WEIGHT
+            aasist_realness * aasist_weight +
+            signal_combined * signal_weight
         )
         
         # Final verdict
