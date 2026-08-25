@@ -740,6 +740,78 @@ document.querySelectorAll("nav a, footer a").forEach(function (link) {
 
 
 /* =========================================================
+   DEMO SAMPLES — Instant pre-loaded analysis
+========================================================= */
+
+async function runDemoSample(sampleId) {
+    const resultBox = document.querySelector("#detectResult");
+    const spectrogramCanvas = document.querySelector("#spectrogramCanvas");
+    const checksContainer = document.querySelector("#signalChecks");
+    const audioPlayer = document.querySelector("#detect audio");
+
+    // Show loading
+    if (resultBox) {
+        resultBox.style.display = "block";
+        const verdictEl = resultBox.querySelector(".verdict-text");
+        if (verdictEl) { verdictEl.textContent = "ANALYZING..."; verdictEl.style.color = "#3b82f6"; }
+    }
+
+    try {
+        // Load audio for playback
+        if (audioPlayer) {
+            audioPlayer.src = API_BASE + "/api/demo/audio/" + sampleId;
+        }
+
+        // Get analysis results (cached, instant)
+        const response = await fetch(API_BASE + "/api/demo/analyze/" + sampleId);
+        if (!response.ok) throw new Error("Demo analysis failed");
+
+        const result = await response.json();
+
+        // Display verdict
+        if (resultBox) {
+            resultBox.style.display = "block";
+            const verdictEl = resultBox.querySelector(".verdict-text");
+            const confidenceEl = resultBox.querySelector(".confidence-text");
+            const durationEl = resultBox.querySelector(".duration-text");
+
+            if (verdictEl) {
+                verdictEl.textContent = result.verdict.toUpperCase();
+                if (result.verdict === "fake") {
+                    verdictEl.style.color = "#ef4444";
+                    resultBox.style.borderColor = "rgba(239, 68, 68, 0.4)";
+                    resultBox.style.background = "rgba(239, 68, 68, 0.05)";
+                } else {
+                    verdictEl.style.color = "#22c55e";
+                    resultBox.style.borderColor = "rgba(34, 197, 94, 0.4)";
+                    resultBox.style.background = "rgba(34, 197, 94, 0.05)";
+                }
+            }
+            if (confidenceEl) confidenceEl.textContent = "Confidence: " + Math.round(result.confidence * 100) + "%";
+            if (durationEl) durationEl.textContent = "Duration: " + result.duration_seconds + "s | Sample: " + (result.demo_info ? result.demo_info.label : sampleId);
+        }
+
+        // Render spectrogram
+        if (spectrogramCanvas && result.spectrogram && result.spectrogram.data.length > 0) {
+            renderSpectrogram(spectrogramCanvas, result.spectrogram);
+        }
+
+        // Render signal checks
+        if (checksContainer && result.signal_checks) {
+            renderSignalChecks(checksContainer, result.signal_checks);
+        }
+
+    } catch (error) {
+        alert("Demo failed: " + error.message + "\nMake sure the backend is running.");
+        console.error(error);
+    }
+}
+
+// Make it global so onclick in HTML works
+window.runDemoSample = runDemoSample;
+
+
+/* =========================================================
    INIT
 ========================================================= */
 
