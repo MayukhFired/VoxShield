@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice De-Cloaking — VoxShield AI</title>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* De-Cloak specific styles */
+        .decloak-hero {
+            text-align: center;
+            padding: 40px 0;
+        }
+        .decloak-hero h1 {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            letter-spacing: -0.04em;
+            background: linear-gradient(135deg, #ef4444 0%, #f59e0b 50%, #22c55e 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .fingerprint-display {
+            position: relative;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            background: radial-gradient(circle at 50% 50%, rgba(239,68,68,0.08), rgba(2,6,23,0.9));
+            border: 1px solid rgba(239,68,68,0.2);
+            overflow: hidden;
+        }
+        .fingerprint-display canvas {
+            width: 100%;
+            max-height: 200px;
+        }
+        .fp-hash {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: #f59e0b;
+            letter-spacing: 0.15em;
+            text-align: center;
+            padding: 12px;
+            background: rgba(245,158,11,0.05);
+            border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        .threat-banner {
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .threat-critical {
+            background: rgba(239,68,68,0.1);
+            border: 2px solid rgba(239,68,68,0.4);
+        }
+        .threat-critical h3 { color: #ef4444; }
+        .threat-high {
+            background: rgba(245,158,11,0.1);
+            border: 2px solid rgba(245,158,11,0.4);
+        }
+        .threat-high h3 { color: #f59e0b; }
+        .threat-low {
+            background: rgba(34,197,94,0.1);
+            border: 2px solid rgba(34,197,94,0.4);
+        }
+        .threat-low h3 { color: #22c55e; }
+        .feature-bars {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .feature-bar {
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(15,23,42,0.6);
+            border: 1px solid rgba(96,165,250,0.1);
+        }
+        .feature-bar-label {
+            font-size: 0.7rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+        .feature-bar-visual {
+            height: 6px;
+            background: rgba(30,41,59,1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .feature-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #3b82f6, #60a5fa);
+            transition: width 0.8s ease;
+        }
+        .match-card {
+            padding: 16px;
+            margin: 10px 0;
+            border-radius: 12px;
+            background: rgba(239,68,68,0.05);
+            border: 1px solid rgba(239,68,68,0.2);
+        }
+        .match-similarity {
+            font-size: 2rem;
+            font-weight: 900;
+            color: #ef4444;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .stat-box {
+            text-align: center;
+            padding: 16px;
+            border-radius: 12px;
+            background: rgba(15,23,42,0.7);
+            border: 1px solid rgba(96,165,250,0.15);
+        }
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: #60a5fa;
+        }
+        .stat-label {
+            font-size: 0.7rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 4px;
+        }
+        .loading-pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        @media (max-width: 599px) {
+            .feature-bars { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="logo">🛡️ VoxShield AI</div>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/#detect">Detect</a>
+            <a href="/#live">Live Mic</a>
+            <a href="/blacklist.html">Blacklist</a>
+            <a href="/decloak.html">De-Cloak</a>
+        </nav>
+    </header>
+
+    <main>
+        <section style="width:min(100%,900px);margin:auto;padding:80px 20px;">
+
+            <!-- HERO -->
+            <div class="decloak-hero">
+                <p class="hero-label">FORENSIC VOICE INTELLIGENCE</p>
+                <h1>Voice De-Cloaking</h1>
+                <p style="color:#94a3b8;max-width:600px;margin:15px auto;line-height:1.7;">
+                    Unmask the scammer's <strong style="color:#ef4444;">real voice</strong> hidden beneath their cloned disguise. 
+                    Every scammer leaves a unique acoustic fingerprint that survives voice conversion.
+                </p>
+            </div>
+
+            <!-- STATS -->
+            <div class="stats-grid" id="decloakStats">
+                <div class="stat-box">
+                    <div class="stat-number" id="statPrints">0</div>
+                    <div class="stat-label">Scammer Prints</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="statCases">0</div>
+                    <div class="stat-label">Cases Analyzed</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="statMatches">0</div>
+                    <div class="stat-label">Cross-Matches</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="statProlific">0</div>
+                    <div class="stat-label">Most Seen</div>
+                </div>
+            </div>
+
+            <!-- UPLOAD -->
+            <div class="blacklist-card">
+                <h2>Upload Suspicious Audio</h2>
+                <p>Upload a voice recording to de-cloak the scammer's real identity.</p>
+
+                <form id="decloakForm">
+                    <input type="file" id="decloakFile" accept="audio/*" required
+                        style="padding:17px;color:#64748b;background:rgba(2,6,23,0.6);border:1px dashed rgba(239,68,68,0.4);">
+                    <input type="text" id="decloakPhone" placeholder="Caller phone number (optional)"
+                        style="margin-top:10px;">
+                    <button type="submit" id="decloakBtn"
+                        style="background:linear-gradient(135deg,#ef4444,#991b1b);margin-top:10px;">
+                        🔓 De-Cloak Voice
+                    </button>
+                </form>
+            </div>
+
+            <!-- RESULTS (hidden until analysis) -->
+            <div id="decloakResults" style="display:none;">
+
+                <!-- Threat Banner -->
+                <div id="threatBanner" class="threat-banner threat-high">
+                    <h3 id="threatHeadline">Analyzing...</h3>
+                    <p id="threatDescription" style="color:#cbd5e1;margin-top:8px;font-size:0.85rem;"></p>
+                </div>
+
+                <!-- Voiceprint Visualization -->
+                <div class="blacklist-card">
+                    <h2>Scammer's Voice Fingerprint</h2>
+                    <p>Extracted from beneath the cloned voice disguise:</p>
+
+                    <div class="fingerprint-display">
+                        <canvas id="fingerprintCanvas" width="700" height="180"></canvas>
+                    </div>
+
+                    <div class="fp-hash" id="fpHash">Loading...</div>
+
+                    <div style="display:flex;justify-content:space-between;color:#94a3b8;font-size:0.75rem;">
+                        <span>Voiceprint ID: <strong id="vpId" style="color:white;">—</strong></span>
+                        <span>Confidence: <strong id="vpConf" style="color:white;">—</strong></span>
+                        <span>Times Seen: <strong id="vpSeen" style="color:white;">—</strong></span>
+                    </div>
+                </div>
+
+                <!-- Feature Breakdown -->
+                <div class="blacklist-card">
+                    <h2>Acoustic Feature Analysis</h2>
+                    <p>5 feature groups extracted that survive voice conversion:</p>
+                    <div class="feature-bars" id="featureBars"></div>
+                </div>
+
+                <!-- Database Matches -->
+                <div class="blacklist-card" id="matchesSection">
+                    <h2>Database Matches</h2>
+                    <p>Cross-referencing against known scammer voiceprints:</p>
+                    <div id="matchesList"></div>
+                </div>
+
+                <!-- Detection Summary -->
+                <div class="blacklist-card">
+                    <h2>Detection Details</h2>
+                    <div id="detectionDetails"></div>
+                </div>
+
+            </div>
+
+        </section>
+    </main>
+
+    <script>
+    const API = "";
+
+    // Load stats on page load
+    (async function loadStats() {
+        try {
+            const r = await fetch(API + "/api/decloak/stats");
+            const s = await r.json();
+            document.getElementById("statPrints").textContent = s.total_scammer_voiceprints || 0;
+            document.getElementById("statCases").textContent = s.total_decloak_cases || 0;
+            document.getElementById("statMatches").textContent = s.cross_case_matches || 0;
+            document.getElementById("statProlific").textContent = s.most_prolific_scammer_cases || 0;
+        } catch(e) { console.log("Stats unavailable"); }
+    })();
+
+    // Form submission
+    document.getElementById("decloakForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+
+        const file = document.getElementById("decloakFile").files[0];
+        if (!file) { alert("Select an audio file."); return; }
+
+        const phone = document.getElementById("decloakPhone").value.trim();
+        const btn = document.getElementById("decloakBtn");
+        const results = document.getElementById("decloakResults");
+
+        btn.disabled = true;
+        btn.textContent = "🔓 De-Cloaking...";
+        results.style.display = "block";
+        document.getElementById("threatBanner").className = "threat-banner threat-high";
+        document.getElementById("threatHeadline").textContent = "Analyzing voice...";
+        document.getElementById("threatHeadline").classList.add("loading-pulse");
+        document.getElementById("threatDescription").textContent = "Extracting scammer fingerprint from audio...";
+
+        const formData = new FormData();
+        formData.append("file", file);
+        if (phone) formData.append("phone_number", phone);
+
+        try {
+            const r = await fetch(API + "/api/decloak" + (phone ? "?phone_number=" + encodeURIComponent(phone) : ""), {
+                method: "POST",
+                body: formData
+            });
+
+            if (!r.ok) {
+                const err = await r.json();
+                throw new Error(err.detail || "De-cloaking failed");
+            }
+
+            const data = await r.json();
+            renderResults(data);
+
+        } catch(err) {
+            document.getElementById("threatHeadline").textContent = "Error: " + err.message;
+            document.getElementById("threatHeadline").classList.remove("loading-pulse");
+            document.getElementById("threatBanner").className = "threat-banner threat-high";
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "🔓 De-Cloak Voice";
+        }
+    });
+
+    function renderResults(data) {
+        const summary = data.summary;
+        const vp = data.voiceprint;
+        const matches = data.matches;
+        const detection = data.detection;
+
+        // Threat banner
+        const banner = document.getElementById("threatBanner");
+        const headline = document.getElementById("threatHeadline");
+        headline.classList.remove("loading-pulse");
+        headline.textContent = summary.headline;
+        document.getElementById("threatDescription").textContent = summary.description;
+
+        banner.className = "threat-banner threat-" + summary.threat_level;
+
+        // Voiceprint hash
+        document.getElementById("fpHash").textContent = "VP:" + vp.fingerprint_hash.toUpperCase();
+        document.getElementById("vpId").textContent = "#" + vp.voiceprint_id;
+        document.getElementById("vpConf").textContent = Math.round(vp.confidence * 100) + "%";
+        document.getElementById("vpSeen").textContent = vp.times_seen + "x";
+
+        // Fingerprint visualization
+        renderFingerprintCanvas(vp.features);
+
+        // Feature bars
+        renderFeatureBars(vp.features);
+
+        // Matches
+        renderMatches(matches);
+
+        // Detection details
+        renderDetection(detection);
+
+        // Refresh stats
+        loadStatsQuiet();
+    }
+
+    function renderFingerprintCanvas(features) {
+        const canvas = document.getElementById("fingerprintCanvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = 700;
+        canvas.height = 180;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw circular voiceprint visualization
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const maxR = 75;
+
+        // Gather all feature values
+        const allVals = [];
+        Object.values(features).forEach(function(arr) {
+            arr.forEach(function(v) { allVals.push(Math.abs(v)); });
+        });
+
+        // Normalize
+        const maxVal = Math.max(...allVals, 0.001);
+
+        // Draw rings
+        const colors = ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e", "#a855f7"];
+        const featureKeys = Object.keys(features);
+
+        featureKeys.forEach(function(key, ring) {
+            const vals = features[key];
+            const color = colors[ring % colors.length];
+            const ringR = 20 + ring * 12;
+
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.8;
+
+            for (let i = 0; i < vals.length; i++) {
+                const angle = (i / vals.length) * Math.PI * 2 - Math.PI / 2;
+                const r = ringR + (Math.abs(vals[i]) / maxVal) * 15;
+                const x = cx + r * Math.cos(angle);
+                const y = cy + r * Math.sin(angle);
+
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+
+            // Glow
+            ctx.globalAlpha = 0.15;
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        });
+
+        // Center dot
+        ctx.beginPath();
+        ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "#fff";
+        ctx.fill();
+
+        // Labels on right side
+        ctx.font = "10px monospace";
+        ctx.textAlign = "left";
+        featureKeys.forEach(function(key, i) {
+            ctx.fillStyle = colors[i % colors.length];
+            const label = key.replace(/_/g, " ");
+            ctx.fillText(label, canvas.width - 150, 30 + i * 18);
+        });
+    }
+
+    function renderFeatureBars(features) {
+        const container = document.getElementById("featureBars");
+        container.innerHTML = "";
+
+        const labels = {
+            temporal_dynamics: "Temporal Dynamics",
+            residual_pitch: "Residual Pitch",
+            formant_ratios: "Formant Ratios",
+            excitation_features: "Excitation Features",
+            spectral_residual: "Spectral Residual"
+        };
+
+        const colors = ["#ef4444", "#f59e0b", "#3b82f6", "#22c55e", "#a855f7"];
+
+        Object.keys(features).forEach(function(key, idx) {
+            const vals = features[key];
+            const avgMagnitude = vals.reduce(function(s, v) { return s + Math.abs(v); }, 0) / vals.length;
+            const pct = Math.min(100, avgMagnitude * 300); // Scale for visual
+
+            const div = document.createElement("div");
+            div.className = "feature-bar";
+            div.innerHTML =
+                '<div class="feature-bar-label">' + (labels[key] || key) + '</div>' +
+                '<div class="feature-bar-visual"><div class="feature-bar-fill" style="width:' + pct + '%;background:' + colors[idx % 5] + ';"></div></div>' +
+                '<div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">Magnitude: ' + avgMagnitude.toFixed(4) + '</div>';
+
+            container.appendChild(div);
+        });
+    }
+
+    function renderMatches(matches) {
+        const container = document.getElementById("matchesList");
+
+        if (!matches || matches.length === 0) {
+            container.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px;">No matches found — this is a NEW scammer voiceprint. Now stored for future identification.</p>';
+            return;
+        }
+
+        container.innerHTML = "";
+        matches.forEach(function(m) {
+            const div = document.createElement("div");
+            div.className = "match-card";
+            div.innerHTML =
+                '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+                '<div>' +
+                '<div class="match-similarity">' + Math.round(m.similarity * 100) + '%</div>' +
+                '<div style="color:#94a3b8;font-size:0.75rem;">Similarity Match</div>' +
+                '</div>' +
+                '<div style="text-align:right;">' +
+                '<div style="color:white;font-weight:700;">Scammer #' + m.voiceprint_id + '</div>' +
+                '<div style="color:#94a3b8;font-size:0.75rem;">Seen ' + m.times_seen + ' time(s)</div>' +
+                '<div style="color:#94a3b8;font-size:0.7rem;">Numbers: ' + (m.linked_numbers.join(", ") || "unknown") + '</div>' +
+                '</div>' +
+                '</div>';
+            container.appendChild(div);
+        });
+    }
+
+    function renderDetection(detection) {
+        const container = document.getElementById("detectionDetails");
+        const v = detection.verdict;
+        const c = detection.confidence;
+        const color = v === "fake" ? "#ef4444" : "#22c55e";
+
+        let html = '<div style="display:flex;align-items:center;gap:15px;margin-bottom:15px;">' +
+            '<div style="font-size:1.5rem;font-weight:900;color:' + color + ';">' + v.toUpperCase() + '</div>' +
+            '<div style="color:#94a3b8;">Confidence: ' + Math.round(c * 100) + '%</div>' +
+            '</div>';
+
+        if (detection.signal_checks) {
+            detection.signal_checks.forEach(function(check) {
+                const icon = check.passed ? "✓" : "✗";
+                const checkColor = check.passed ? "#22c55e" : "#ef4444";
+                html += '<div style="padding:8px;margin:4px 0;border-radius:8px;background:rgba(15,23,42,0.5);font-size:0.8rem;">' +
+                    '<span style="color:' + checkColor + ';font-weight:700;">' + icon + '</span> ' +
+                    '<span style="color:#cbd5e1;text-transform:capitalize;">' + check.check_name.replace(/_/g, " ") + '</span>' +
+                    ' <span style="color:#64748b;float:right;">' + Math.round(check.score * 100) + '%</span>' +
+                    '</div>';
+            });
+        }
+
+        container.innerHTML = html;
+    }
+
+    async function loadStatsQuiet() {
+        try {
+            const r = await fetch(API + "/api/decloak/stats");
+            const s = await r.json();
+            document.getElementById("statPrints").textContent = s.total_scammer_voiceprints || 0;
+            document.getElementById("statCases").textContent = s.total_decloak_cases || 0;
+            document.getElementById("statMatches").textContent = s.cross_case_matches || 0;
+            document.getElementById("statProlific").textContent = s.most_prolific_scammer_cases || 0;
+        } catch(e) {}
+    }
+    </script>
+
+</body>
+</html>
