@@ -28,6 +28,9 @@ ml/models/*.bin
 .vscode/
 .idea/
 
+# MCP Shield
+mcp-shield.db*
+
 # OS
 .DS_Store
 Thumbs.db
