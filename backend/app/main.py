@@ -53,6 +53,11 @@ async def serve_blacklist():
     return FileResponse(os.path.join(STATIC_DIR, "blacklist.html"))
 
 
+@app.get("/decloak.html")
+async def serve_decloak():
+    return FileResponse(os.path.join(STATIC_DIR, "decloak.html"))
+
+
 # Mount static assets LAST (CSS, JS, images at /static/)
 if os.path.isdir(STATIC_DIR):
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
