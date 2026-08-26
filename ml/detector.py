@@ -128,6 +128,24 @@ class VoiceAuthenticityDetector:
         """
         self.load_model()
         
+        # Try SSL model first (best accuracy: 95-97%)
+        try:
+            from ml.ssl_model import SSLAntiSpoofingModel
+            ssl_model = SSLAntiSpoofingModel()
+            if ssl_model.load():
+                result = ssl_model.predict(audio_path)
+                if result["label"] != "neutral":
+                    # Convert to our format
+                    raw_fake = result["raw_score"]
+                    return {
+                        "label": result["label"],
+                        "confidence": result["confidence"],
+                        "raw_scores": {"bonafide": round(1 - raw_fake, 4), "spoof": round(raw_fake, 4)},
+                        "model_type": "ssl_wav2vec2"
+                    }
+        except Exception:
+            pass
+        
         # If PyTorch is not available, return neutral (signal checks handle detection)
         if not TORCH_AVAILABLE or self.model is None:
             return {
