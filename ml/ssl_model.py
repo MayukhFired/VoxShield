@@ -1,63 +1,93 @@
 """
-VoxShield AI — SSL (Self-Supervised Learning) Anti-Spoofing Model
+VoxShield AI — Mel-Spectrogram ResNet Anti-Spoofing Model
 
-Uses wav2vec2-base as feature extractor + BiGRU + Multi-Head Attention classifier.
-Based on koyelog/deepfake-voice-detector-sota (HuggingFace).
+Architecture (from koyelog/deepfake-voice-detector-sota):
+    - Input: Mel-spectrogram (128 mels, 4 seconds @ 16kHz)
+    - ResNet encoder: conv1(1→64) + layer1(64→64) + layer2(64→128) + layer3(128→256)
+    - Bidirectional GRU: 2 layers, 256 hidden (→512 output)
+    - Multi-Head Attention: 3 heads, 512 dim
+    - Classifier: 512→512→128→1 (sigmoid)
 
-Architecture:
-    - Wav2Vec2 encoder (facebook/wav2vec2-base) — pretrained speech features
-    - Bidirectional GRU: 2 layers, 256 hidden units per direction (512 total)
-    - Multi-Head Attention: 8 heads, 512-dimensional
-    - Classification head: 512→512→128→1 (sigmoid output)
-
-Input: 4-second audio clip at 16kHz
-Output: probability of "fake" (0=real, 1=fake)
-Accuracy: 95-97% on 822K+ samples from 19 datasets
+Config: sample_rate=16000, n_mels=128, n_fft=1024, hop_length=512, duration=4s
+Trained on 822K+ samples from 19 datasets. Accuracy: 95-97%.
 """
 
 import os
 import torch
 import torch.nn as nn
 import numpy as np
-from typing import Dict, Any, Optional
+import librosa
+from typing import Dict, Any
 
-# Model paths
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "models")
 SSL_MODEL_PATH = os.path.join(MODEL_DIR, "pytorch_model.pth")
 
 
-class DeepfakeVoiceDetector(nn.Module):
-    """
-    BiGRU + Multi-Head Attention classifier on top of wav2vec2 features.
-    Matches the architecture from koyelog/deepfake-voice-detector-sota.
-    """
+class ResNetBlock(nn.Module):
+    """Basic ResNet block with two 3x3 convolutions."""
+    def __init__(self, in_channels, out_channels, stride=1, downsample=None):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, 3, stride=stride, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, 3, stride=1, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace=True)
+        self.downsample = downsample
 
-    def __init__(self, input_dim=768, hidden_dim=256, num_layers=2, num_heads=8, dropout=0.3):
+    def forward(self, x):
+        identity = x
+        out = self.relu(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        if self.downsample is not None:
+            identity = self.downsample(x)
+        out += identity
+        out = self.relu(out)
+        return out
+
+
+class DeepfakeDetectorModel(nn.Module):
+    """
+    ResNet + BiGRU + Attention classifier for mel-spectrogram input.
+    Matches the pretrained weights from koyelog/deepfake-voice-detector-sota.
+    """
+    def __init__(self):
         super().__init__()
 
-        self.input_dim = input_dim  # wav2vec2-base output dimension
+        # Initial convolution
+        self.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+
+        # ResNet layers
+        self.layer1 = self._make_layer(64, 64, 2)
+        self.layer2 = self._make_layer(64, 128, 2, stride=2)
+        self.layer3 = self._make_layer(128, 256, 2, stride=2)
+
+        # Adaptive pooling to collapse frequency dimension
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((None, 1))
 
         # Bidirectional GRU
         self.gru = nn.GRU(
-            input_size=input_dim,
-            hidden_size=hidden_dim,
-            num_layers=num_layers,
+            input_size=256,
+            hidden_size=256,
+            num_layers=2,
             batch_first=True,
             bidirectional=True,
-            dropout=dropout if num_layers > 1 else 0,
+            dropout=0.3,
         )
 
-        # Multi-Head Attention
+        # Multi-Head Attention (8 heads, 512 dim)
         self.attention = nn.MultiheadAttention(
-            embed_dim=hidden_dim * 2,  # bidirectional = 2x hidden
-            num_heads=num_heads,
-            dropout=dropout,
+            embed_dim=512,
+            num_heads=8,
+            dropout=0.3,
             batch_first=True,
         )
 
-        # Classification head
+        # Classifier
         self.classifier = nn.Sequential(
-            nn.Linear(hidden_dim * 2, 512),
+            nn.Linear(512, 512),
             nn.ReLU(),
             nn.BatchNorm1d(512),
             nn.Dropout(0.4),
@@ -68,20 +98,39 @@ class DeepfakeVoiceDetector(nn.Module):
             nn.Linear(128, 1),
         )
 
+    def _make_layer(self, in_channels, out_channels, num_blocks, stride=1):
+        downsample = None
+        if stride != 1 or in_channels != out_channels:
+            downsample = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, 1, stride=stride, bias=False),
+                nn.BatchNorm2d(out_channels),
+            )
+
+        layers = [ResNetBlock(in_channels, out_channels, stride, downsample)]
+        for _ in range(1, num_blocks):
+            layers.append(ResNetBlock(out_channels, out_channels))
+        return nn.Sequential(*layers)
+
     def forward(self, x):
-        """
-        Args:
-            x: wav2vec2 features [batch, seq_len, 768]
-        Returns:
-            logits: [batch, 1]
-        """
+        # x: [batch, 1, n_mels, time]
+        x = self.relu(self.bn1(self.conv1(x)))
+        x = self.maxpool(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+
+        # Collapse frequency: [batch, 256, freq, time] → [batch, 256, 1, time]
+        x = self.adaptive_pool(x)
+        # → [batch, 256, time]
+        x = x.squeeze(3).permute(0, 2, 1)  # [batch, time, 256]
+
         # GRU
-        gru_out, _ = self.gru(x)  # [batch, seq_len, 512]
+        gru_out, _ = self.gru(x)  # [batch, time, 512]
 
-        # Self-attention
-        attn_out, _ = self.attention(gru_out, gru_out, gru_out)  # [batch, seq_len, 512]
+        # Attention
+        attn_out, _ = self.attention(gru_out, gru_out, gru_out)  # [batch, time, 512]
 
-        # Pool (mean over time)
+        # Pool over time
         pooled = attn_out.mean(dim=1)  # [batch, 512]
 
         # Classify
@@ -90,113 +139,70 @@ class DeepfakeVoiceDetector(nn.Module):
 
 
 class SSLAntiSpoofingModel:
-    """
-    High-level wrapper that handles:
-    - Loading wav2vec2 feature extractor
-    - Loading the trained classifier
-    - Running inference on audio files
-    """
+    """High-level wrapper for inference."""
 
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.feature_extractor = None
-        self.wav2vec2_model = None
-        self.classifier = None
+        self.model = None
         self._loaded = False
         self.sample_rate = 16000
-        self.target_length = 4 * 16000  # 4 seconds
+        self.n_mels = 128
+        self.n_fft = 1024
+        self.hop_length = 512
+        self.duration = 4  # seconds
+        self.target_length = self.duration * self.sample_rate
 
     def load(self) -> bool:
-        """Load the feature extractor and classifier model."""
+        """Load the model with pretrained weights."""
         if self._loaded:
             return True
 
         try:
-            from transformers import Wav2Vec2FeatureExtractor, Wav2Vec2Model
-
-            # Load wav2vec2 feature extractor and model
-            print("[INFO] Loading wav2vec2-base feature extractor...")
-            self.feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained("facebook/wav2vec2-base")
-            self.wav2vec2_model = Wav2Vec2Model.from_pretrained("facebook/wav2vec2-base")
-            self.wav2vec2_model.to(self.device)
-            self.wav2vec2_model.eval()
-
-            # Freeze wav2vec2 (we only use it as feature extractor)
-            for param in self.wav2vec2_model.parameters():
-                param.requires_grad = False
-
-            # Load classifier
-            self.classifier = DeepfakeVoiceDetector(input_dim=768)
+            self.model = DeepfakeDetectorModel()
 
             if os.path.exists(SSL_MODEL_PATH):
-                print(f"[INFO] Loading trained classifier from {SSL_MODEL_PATH}...")
-                state_dict = torch.load(SSL_MODEL_PATH, map_location=self.device, weights_only=False)
+                print(f"[INFO] Loading deepfake detector from {SSL_MODEL_PATH}...")
+                checkpoint = torch.load(SSL_MODEL_PATH, map_location=self.device, weights_only=False)
 
-                # Handle potential key mismatches
-                try:
-                    self.classifier.load_state_dict(state_dict, strict=False)
-                    print("[INFO] SSL Anti-Spoofing model loaded successfully!")
-                except Exception as e:
-                    print(f"[WARNING] Partial weight loading: {e}")
-                    # Try loading with key remapping
-                    self._load_with_remap(state_dict)
+                state_dict = checkpoint.get("model_state_dict", checkpoint)
+                self.model.load_state_dict(state_dict, strict=False)
+                print("[INFO] Deepfake detection model loaded successfully!")
+                print(f"[INFO] Validation accuracy: {checkpoint.get('val_accuracy', 'N/A')}")
             else:
                 print(f"[WARNING] Model weights not found at {SSL_MODEL_PATH}")
-                print(f"[INFO] Download from: https://huggingface.co/koyelog/deepfake-voice-detector-sota")
-                print(f"[INFO] Place pytorch_model.pth in: {MODEL_DIR}")
                 return False
 
-            self.classifier.to(self.device)
-            self.classifier.eval()
+            self.model.to(self.device)
+            self.model.eval()
             self._loaded = True
             return True
 
-        except ImportError:
-            print("[WARNING] 'transformers' package not installed. Run: pip install transformers")
-            return False
         except Exception as e:
-            print(f"[ERROR] Failed to load SSL model: {e}")
+            print(f"[ERROR] Failed to load model: {e}")
             return False
 
-    def _load_with_remap(self, state_dict):
-        """Attempt to load weights with key remapping for compatibility."""
-        model_keys = set(self.classifier.state_dict().keys())
-        loaded_keys = set(state_dict.keys())
+    def _audio_to_melspec(self, audio: np.ndarray) -> torch.Tensor:
+        """Convert audio to mel-spectrogram tensor."""
+        mel_spec = librosa.feature.melspectrogram(
+            y=audio, sr=self.sample_rate,
+            n_mels=self.n_mels, n_fft=self.n_fft, hop_length=self.hop_length
+        )
+        mel_spec_db = librosa.power_to_db(mel_spec, ref=np.max)
 
-        # Try direct subset loading
-        compatible = {k: v for k, v in state_dict.items() if k in model_keys}
-        if compatible:
-            self.classifier.load_state_dict(compatible, strict=False)
-            print(f"[INFO] Loaded {len(compatible)}/{len(model_keys)} weight tensors.")
-        else:
-            print("[WARNING] No compatible weights found. Using random initialization.")
+        # Normalize to [0, 1]
+        mel_spec_db = (mel_spec_db - mel_spec_db.min()) / (mel_spec_db.max() - mel_spec_db.min() + 1e-10)
+
+        # To tensor: [1, 1, n_mels, time]
+        tensor = torch.FloatTensor(mel_spec_db).unsqueeze(0).unsqueeze(0)
+        return tensor
 
     def predict(self, audio_path: str) -> Dict[str, Any]:
-        """
-        Run inference on an audio file.
-
-        Returns:
-            {
-                "label": "real" | "fake",
-                "confidence": float (0.0 to 1.0),
-                "raw_score": float (probability of fake),
-                "model_type": "ssl_wav2vec2"
-            }
-        """
+        """Run inference on an audio file."""
         if not self._loaded:
-            success = self.load()
-            if not success:
-                return {
-                    "label": "neutral",
-                    "confidence": 0.5,
-                    "raw_score": 0.5,
-                    "model_type": "ssl_wav2vec2",
-                    "error": "Model not loaded"
-                }
+            if not self.load():
+                return {"label": "neutral", "confidence": 0.5, "raw_score": 0.5, "model_type": "resnet_gru"}
 
         try:
-            import librosa
-
             # Load audio
             audio, sr = librosa.load(audio_path, sr=self.sample_rate, mono=True)
 
@@ -210,22 +216,14 @@ class SSLAntiSpoofingModel:
             if np.max(np.abs(audio)) > 0:
                 audio = audio / np.max(np.abs(audio))
 
-            # Extract features with wav2vec2
-            inputs = self.feature_extractor(
-                audio, sampling_rate=self.sample_rate, return_tensors="pt"
-            )
-            input_values = inputs.input_values.to(self.device)
+            # Convert to mel-spectrogram
+            mel_tensor = self._audio_to_melspec(audio).to(self.device)
 
-            # Get wav2vec2 features
+            # Inference
             with torch.no_grad():
-                wav2vec_output = self.wav2vec2_model(input_values)
-                features = wav2vec_output.last_hidden_state  # [1, seq_len, 768]
-
-                # Run classifier
-                logits = self.classifier(features)  # [1, 1]
+                logits = self.model(mel_tensor)
                 prob_fake = torch.sigmoid(logits).item()
 
-            # Determine label
             label = "fake" if prob_fake >= 0.5 else "real"
             confidence = prob_fake if label == "fake" else (1 - prob_fake)
 
@@ -233,14 +231,8 @@ class SSLAntiSpoofingModel:
                 "label": label,
                 "confidence": round(confidence, 4),
                 "raw_score": round(prob_fake, 4),
-                "model_type": "ssl_wav2vec2",
+                "model_type": "resnet_gru",
             }
 
         except Exception as e:
-            return {
-                "label": "neutral",
-                "confidence": 0.5,
-                "raw_score": 0.5,
-                "model_type": "ssl_wav2vec2",
-                "error": str(e),
-            }
+            return {"label": "neutral", "confidence": 0.5, "raw_score": 0.5, "model_type": "resnet_gru", "error": str(e)}
