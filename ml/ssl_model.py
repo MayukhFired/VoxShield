@@ -130,7 +130,7 @@ class SSLAntiSpoofingModel:
 
             if os.path.exists(SSL_MODEL_PATH):
                 print(f"[INFO] Loading trained classifier from {SSL_MODEL_PATH}...")
-                state_dict = torch.load(SSL_MODEL_PATH, map_location=self.device)
+                state_dict = torch.load(SSL_MODEL_PATH, map_location=self.device, weights_only=False)
 
                 # Handle potential key mismatches
                 try:
