@@ -1,83 +1,60 @@
-<p align="center">
-  <img src="static/logo.png" alt="VoxShield AI Logo" width="120" />
-</p>
+# 🛡️ VoxShield AI — AI-Powered Voice Cloning Detection & Prevention
 
-<h1 align="center">VoxShield AI</h1>
+> **Detect. Verify. Protect.**
 
-<p align="center">
-  <strong>AI-Powered Real-Time Voice Cloning Detection</strong>
-</p>
-
-<p align="center">
-  <em>Detect. Verify. Protect.</em>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/FastAPI-0.104-009688?logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/PyTorch-2.1-EE4C2C?logo=pytorch&logoColor=white" alt="PyTorch" />
-  <img src="https://img.shields.io/badge/WebSocket-Real--Time-blue" alt="WebSocket" />
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
-</p>
-
-<p align="center">
-  Built for <strong>Smart India Hackathon 2025</strong>
-</p>
+Real-time detection and prevention of voice cloning impersonation attacks. Built for Smart India Hackathon 2025 (CodeSprint 3.0).
 
 ---
 
-## Overview
+## The Problem
 
-**VoxShield AI** is an intelligent voice security platform that detects synthetic and cloned voices in real-time. It combines a deep learning model (AASIST) with interpretable acoustic signal analysis to identify AI-generated speech with high accuracy.
+- Voice cloning requires just **3 seconds** of sample audio to clone any voice
+- **70% of people** cannot distinguish cloned voices from real ones
+- Voice fraud losses exceed **$25 billion** annually
+- Criminals use cloned voices for kidnapping extortion, CEO fraud, and bank impersonation
 
-As voice cloning technology becomes increasingly accessible, VoxShield provides a defense layer for individuals and organizations against voice-based impersonation attacks, scam calls, and deepfake audio.
+## Our Solution
 
----
-
-## Key Features
-
-| Feature | Description |
-|---------|-------------|
-| **Upload & Detect** | Upload WAV/MP3/FLAC/OGG audio files and get instant real/fake verdict with spectrogram visualization |
-| **Live Microphone** | Stream audio from your browser microphone for real-time detection via WebSocket |
-| **Community Blacklist** | Report scam phone numbers, search the database, and benefit from community-powered protection |
-| **Call Simulation** | Interactive demo showing how VoxShield protects users during phone calls |
-| **Quick Demo Mode** | Pre-loaded audio samples for instant live presentations without file uploads |
-| **De-Cloak** | Advanced voice unmasking and identity verification |
-| **ScamTrap** | Automated scam caller identification and trapping |
+VoxShield AI is an AI-powered voice security platform that:
+1. **Detects** synthetic/cloned voices in real-time using acoustic signal analysis
+2. **De-Cloaks** the scammer's real voice hidden beneath their disguise
+3. **Fights back** with an AI decoy that wastes scammers' time and collects evidence
+4. **Protects the community** through a shared blacklist database
 
 ---
 
-## Detection Engine
+## Features
 
-VoxShield uses a **dual-layer ensemble architecture** that combines machine learning with rule-based acoustic analysis:
+### 1. Voice Authentication Detection
+Upload audio or stream from microphone → instant REAL/FAKE verdict with spectrogram visualization and detailed acoustic breakdown.
 
-### Layer 1: AASIST Deep Learning Model (60% weight)
+### 2. Voice De-Cloaking (Novel)
+Extracts the scammer's **real underlying voiceprint** from cloned audio. If the same scammer calls again using a different voice or number, we identify them. Inspired by TRIDENT (arxiv 2607.23650, July 2025).
 
-- **Architecture:** Graph Attention Network (Integrated Spectro-Temporal)
-- **Training Data:** ASVspoof 2019 LA dataset
-- **Performance:** 0.83% Equal Error Rate (EER) with pretrained weights
-- **Fallback:** Gracefully degrades to signal-only mode if weights are unavailable
+### 3. ScamTrap AI (Novel)
+Deploys an AI persona that engages scammers in conversation — wasting their time while collecting intelligence about their tactics. Every minute wasted = a minute they can't scam real victims.
 
-### Layer 2: Acoustic Signal Analysis (40% weight)
+### 4. Community Blacklist
+Reported scam numbers are shared across all users. When one person catches a scammer, everyone is protected.
 
-Four specialized analyzers examine physical and digital artifacts:
+### 5. Real-Time Live Mic Detection
+WebSocket-based streaming analysis from browser microphone with live confidence meter.
 
-| Check | What It Detects |
-|-------|----------------|
-| **Pitch Stability** | Unnaturally stable F0 and low jitter common in TTS systems |
-| **Breath Presence** | Missing micro-inhalation sounds in speech pauses |
-| **Silence Naturalness** | Mathematical silence (exact zeros) vs. natural room tone |
-| **Spectral Cutoff** | Sharp high-frequency rolloff from neural vocoders (7-8 kHz) |
+### 6. Call Simulation
+Interactive demo showing how detection works during actual phone calls.
 
-### Scoring
+---
 
-```
-Final Score = (AASIST_realness x 0.60) + (Signal_combined x 0.40)
-Verdict: Real if score > 0.5, Fake otherwise
+## Quick Start
+
+```bash
+cd backend
+.\venv\Scripts\activate        # Windows
+# source venv/bin/activate     # Linux/Mac
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-A penalty multiplier is applied when 3+ signal checks fail, increasing fake detection sensitivity.
+Open **http://localhost:8000** — single server, full application.
 
 ---
 
@@ -85,234 +62,113 @@ A penalty multiplier is applied when 3+ signal checks fail, increasing fake dete
 
 | Layer | Technology |
 |-------|-----------|
-| **Backend** | Python 3.10+, FastAPI, Uvicorn |
-| **Frontend** | HTML5, CSS3, Vanilla JavaScript |
-| **ML/AI** | PyTorch, AASIST, librosa, NumPy, SciPy |
-| **Real-Time** | WebSocket (browser mic streaming) |
-| **Database** | SQLite (blacklist storage) |
-| **Audio Processing** | librosa, soundfile, pydub |
+| Backend | Python, FastAPI, Uvicorn |
+| Frontend | HTML5, CSS3, Vanilla JavaScript (PWA) |
+| ML/AI | PyTorch, librosa, NumPy, SciPy |
+| Database | SQLite (zero-config) |
+| Real-time | WebSocket, Web Audio API |
+| Audio | ffmpeg (imageio-ffmpeg), soundfile |
 
 ---
 
-## Quick Start
+## Detection Engine
 
-### Prerequisites
+### Signal-Based Analysis (4 Acoustic Checks)
+| Check | What it detects |
+|-------|----------------|
+| **Silence Naturalness** | Mathematical silence vs ambient noise floor |
+| **Spectral Cutoff** | Sharp high-frequency rolloff from neural vocoders |
+| **Pitch Stability** | Unnaturally stable F0 (low jitter/shimmer) |
+| **Breath Presence** | Absence of natural micro-breaths in pauses |
 
-- Python 3.10 or higher
-- pip (Python package manager)
-- A modern web browser (Chrome, Firefox, Edge)
+### ML Model
+ResNet + BiGRU + Multi-Head Attention classifier trained on mel-spectrograms. Architecture supports pretrained weights for 98%+ accuracy on ASVspoof benchmark data.
 
-### Installation
+### Voice De-Cloaking Engine
+128-dimensional voiceprint extracted from 5 feature groups:
+- Temporal dynamics (speaking rhythm)
+- Residual pitch (micro-prosody that survives voice conversion)
+- Formant ratios (vocal tract geometry)
+- Excitation features (glottal characteristics)
+- Spectral residual (higher-order MFCCs)
 
-```bash
-# Clone the repository
-git clone https://github.com/MayukhFired/VoxShield.git
-cd VoxShield
+---
 
-# Create and activate virtual environment
-python -m venv backend/venv
+## API Endpoints
 
-# Windows
-backend\venv\Scripts\activate
-
-# macOS/Linux
-source backend/venv/bin/activate
-
-# Install dependencies
-pip install -r backend/requirements.txt
-```
-
-### Run the Server
-
-```bash
-cd backend
-uvicorn app.main:app --reload --port 8000
-```
-
-### Open the App
-
-Navigate to **http://localhost:8000** in your browser. That's it — single server, full application.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Main application |
+| GET | `/health` | Health check |
+| POST | `/api/detect` | Upload audio for detection |
+| WS | `/ws/stream` | Live mic WebSocket |
+| POST | `/api/decloak` | Voice de-cloaking + fingerprint |
+| GET | `/api/decloak/stats` | De-cloaking statistics |
+| POST | `/api/scamtrap/auto` | Run ScamTrap conversation |
+| GET | `/api/demo/samples` | List demo samples |
+| GET | `/api/demo/analyze/{id}` | Analyze demo sample |
+| POST | `/api/blacklist/report` | Report scam number |
+| GET | `/api/blacklist/check/{number}` | Check if blacklisted |
+| GET | `/api/blacklist/list` | Paginated blacklist |
 
 ---
 
 ## Project Structure
 
 ```
-VoxShield/
-├── backend/                         # FastAPI application server
+VoxShield-AI/
+├── backend/                    # FastAPI server
 │   ├── app/
-│   │   ├── main.py                  # App entry point, static file serving, CORS
-│   │   ├── database.py              # SQLite blacklist database layer
+│   │   ├── main.py            # Entry point + static serving
+│   │   ├── database.py        # SQLite (blacklist + voiceprints)
 │   │   └── routers/
-│   │       ├── detect.py            # POST /api/detect — file upload analysis
-│   │       ├── blacklist.py         # CRUD /api/blacklist/* — scam number DB
-│   │       ├── demo.py              # GET /api/demo/* — pre-loaded samples
-│   │       └── websocket_stream.py  # WS /ws/stream — live mic streaming
-│   ├── requirements.txt             # Python dependencies
-│   └── venv/                        # Virtual environment (not tracked)
-│
-├── ml/                              # AI Detection Engine
-│   ├── detector.py                  # AASIST model wrapper & inference
-│   ├── signal_checks.py            # 4 acoustic signal analyzers
-│   ├── ensemble.py                  # Weighted ensemble scoring engine
-│   └── models/                      # Place AASIST.pth weights here
-│
-├── static/                          # Frontend (served by FastAPI)
-│   ├── index.html                   # Main application page
-│   ├── blacklist.html               # Community blacklist page
-│   ├── style.css                    # Premium dark theme UI
-│   ├── script.js                    # Client-side JavaScript
-│   └── logo.png                     # App logo
-│
+│   │       ├── detect.py      # Audio detection API
+│   │       ├── decloak.py     # Voice de-cloaking API
+│   │       ├── scamtrap.py    # ScamTrap AI engine
+│   │       ├── blacklist.py   # Community blacklist
+│   │       ├── demo.py        # Pre-loaded demo samples
+│   │       └── websocket_stream.py
+│   └── requirements.txt
+├── static/                     # PWA Frontend
+│   ├── index.html, blacklist.html, decloak.html, scamtrap.html
+│   ├── style.css, emergency.css, script.js
+│   ├── manifest.json, sw.js   # PWA support
+│   └── icons
+├── ml/                         # AI Detection Engine
+│   ├── detector.py            # Model wrapper
+│   ├── signal_checks.py       # 4 acoustic analyzers
+│   ├── ensemble.py            # Weighted scoring
+│   ├── voiceprint.py          # De-cloaking fingerprint
+│   └── ssl_model.py           # ResNet+GRU classifier
 ├── data/
-│   ├── demo/                        # Pre-loaded demo audio samples
-│   ├── real/                        # Real voice samples
-│   └── synthetic/                   # Synthetic voice samples
-│
+│   ├── demo/                  # Quick demo audio
+│   ├── real/                  # Real voice samples
+│   └── synthetic/             # TTS-generated samples
 └── README.md
 ```
 
 ---
 
-## API Reference
+## Privacy
 
-### Detection
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/detect` | Upload an audio file for voice authenticity analysis |
-| `WS` | `/ws/stream` | Real-time mic audio streaming via WebSocket |
-
-### Demo
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/demo/samples` | List available demo samples |
-| `GET` | `/api/demo/analyze/{id}` | Analyze a pre-loaded sample instantly |
-| `GET` | `/api/demo/audio/{id}` | Serve demo audio for playback |
-
-### Blacklist
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/blacklist/report` | Report a scam phone number |
-| `GET` | `/api/blacklist/check/{number}` | Check if a number is blacklisted |
-| `GET` | `/api/blacklist/list` | Paginated list of reported numbers |
-| `GET` | `/api/blacklist/search?q=` | Search reported numbers |
-
-### System
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/` | Serve frontend application |
-| `GET` | `/health` | Health check endpoint |
+- **Zero audio storage** — files deleted immediately after analysis
+- **No transcription** — only acoustic feature analysis
+- **No cloud upload** — all processing on-server
+- **Voiceprints are non-reversible** — cannot reconstruct voice from fingerprint
 
 ---
 
-## How It Works
+## References
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      User Input                              │
-│            (Upload File / Live Microphone)                   │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-                      ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Audio Preprocessing                         │
-│          (16kHz mono, trim silence, normalize)               │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-          ┌───────────┴───────────┐
-          ▼                       ▼
-┌──────────────────┐    ┌──────────────────────┐
-│   AASIST Model   │    │   Signal Checks (4)  │
-│   (60% weight)   │    │   (40% weight)       │
-│                  │    │                      │
-│  Graph Attention │    │  • Pitch Stability   │
-│  Network on      │    │  • Breath Presence   │
-│  spectro-temporal│    │  • Silence Natural.  │
-│  features        │    │  • Spectral Cutoff   │
-└────────┬─────────┘    └──────────┬───────────┘
-         │                         │
-         └────────────┬────────────┘
-                      ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  Ensemble Scoring                             │
-│         Weighted combination + penalty logic                  │
-└─────────────────────┬───────────────────────────────────────┘
-                      │
-                      ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     Output                                    │
-│  Verdict (Real/Fake) + Confidence + Spectrogram + Details   │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Using Pretrained Weights
-
-For maximum accuracy, download the AASIST pretrained weights and place them in the models directory:
-
-```
-ml/models/AASIST.pth
-```
-
-Without weights, the system operates in **signal-checks-only mode** using the 4 acoustic analyzers. This still provides useful detection but with reduced accuracy.
-
----
-
-## Privacy & Security
-
-- **Zero Audio Storage** — Uploaded files are deleted immediately after analysis
-- **No Transcription** — Only acoustic features are analyzed, not speech content
-- **No Cloud Upload** — All processing happens locally on the server
-- **No Tracking** — No user analytics or behavioral tracking
-- **On-Device Ready** — Architecture designed for future mobile/edge deployment
-
----
-
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `8000` | Server port |
-| `HOST` | `0.0.0.0` | Server host binding |
-
----
-
-## Contributing
-
-Contributions are welcome! Here's how to get involved:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m "Add your feature"`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
-
----
-
-## Acknowledgments
-
-- **AASIST** — [Audio Anti-Spoofing using Integrated Spectro-Temporal Graph Attention Networks](https://arxiv.org/abs/2110.01200)
-- **ASVspoof 2019** — Automatic Speaker Verification Spoofing and Countermeasures Challenge
-- **librosa** — Audio analysis library for Python
-- **FastAPI** — Modern Python web framework
+- AASIST: Audio Anti-Spoofing using Integrated Spectro-Temporal Graph Attention Networks (Jung et al., ICASSP 2022)
+- TRIDENT: Recovering Source Speaker Identity from Voice Conversion (arxiv 2607.23650, July 2025)
+- ASVspoof Challenge: https://www.asvspoof.org/
+- Daisy AI (Virgin Media O2) — AI scambaiter concept
 
 ---
 
 ## Team
 
-Built with passion for **Smart India Hackathon 2025**.
+Built for **Smart India Hackathon 2025 / CodeSprint 3.0**
 
----
-
-<p align="center">
-  <strong>VoxShield AI</strong> — Because every voice deserves to be verified.
-</p>
-
-<p align="center">
-  <sub>© 2025 VoxShield AI · Smart India Hackathon · All Rights Reserved</sub>
-</p>
+© 2025 VoxShield AI — All Rights Reserved

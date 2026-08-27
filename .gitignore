@@ -18,6 +18,8 @@ ml/models/*.bin
 
 # Database (auto-created on start)
 *.db
+*.db-shm
+*.db-wal
 *.sqlite3
 
 # Environment
