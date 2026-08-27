@@ -8,6 +8,13 @@
     <title>VoxShield AI - Detect.Verify.Protect</title>
     <link rel="icon" type="image/png" href="/static/logo.png">
     <link rel="stylesheet" href="/static/style.css">
+    <!-- PWA -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="VoxShield">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
 </head>
 
 <body>
@@ -285,6 +292,14 @@
     </footer>
 
     <script src="/static/script.js"></script>
+    <script>
+    // Register PWA Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/static/sw.js')
+            .then(function(reg) { console.log('SW registered:', reg.scope); })
+            .catch(function(err) { console.log('SW failed:', err); });
+    }
+    </script>
 
 </body>
 </html>
