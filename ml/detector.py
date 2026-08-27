@@ -53,27 +53,25 @@ class VoiceAuthenticityDetector:
             return
         
         if not TORCH_AVAILABLE:
-            print("[INFO] PyTorch not installed. Running in signal-checks-only mode.")
+            print("[INFO] PyTorch not installed. Signal-checks-only mode.")
+            self.model = None
             self._loaded = True
             return
         
-        # Build a simple anti-spoofing classifier
-        # In production, replace with full AASIST architecture
-        self.model = self._build_model()
-        
         if os.path.exists(AASIST_WEIGHTS):
+            self.model = self._build_model()
             checkpoint = torch.load(AASIST_WEIGHTS, map_location=self.device)
             if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
                 self.model.load_state_dict(checkpoint["model_state_dict"], strict=False)
             else:
                 self.model.load_state_dict(checkpoint, strict=False)
+            self.model.to(self.device)
+            self.model.eval()
             print("[INFO] AASIST model loaded with pretrained weights.")
         else:
-            print("[INFO] AASIST model initialized without pretrained weights (demo mode).")
-            print(f"[INFO] To use pretrained weights, place them at: {AASIST_WEIGHTS}")
+            self.model = None
+            print("[INFO] No pretrained weights. Signal-checks-only mode.")
         
-        self.model.to(self.device)
-        self.model.eval()
         self._loaded = True
     
     def _build_model(self):

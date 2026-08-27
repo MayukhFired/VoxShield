@@ -115,8 +115,16 @@ class EnsembleDetector:
         
         # Final verdict (threshold 0.65 — calibrated for real speech vs modern TTS)
         verdict = "real" if ensemble_score > 0.65 else "fake"
-        confidence = abs(ensemble_score - 0.65) * 2.5  # Scale relative to threshold
-        confidence = round(min(1.0, max(0.0, confidence)), 4)
+        
+        # Confidence: how far from threshold, scaled to be meaningful
+        # Real voices typically score 0.75-0.95, fakes score 0.3-0.6
+        if verdict == "real":
+            # Scale: 0.65→50%, 0.80→75%, 1.0→100%
+            confidence = 0.5 + (ensemble_score - 0.65) * 1.43
+        else:
+            # Scale: 0.65→50%, 0.40→80%, 0.0→100%
+            confidence = 0.5 + (0.65 - ensemble_score) * 1.43
+        confidence = round(min(1.0, max(0.5, confidence)), 4)
         
         # Step 5: Generate spectrogram data for frontend visualization
         spectrogram_data = self._generate_spectrogram(audio, sr)
