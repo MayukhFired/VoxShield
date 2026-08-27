@@ -93,37 +93,29 @@ const API_BASE = "";  // Same origin — served by FastAPI
 
         resultBox.style.display = "block";
 
-        const verdictEl = resultBox.querySelector(".verdict-text");
-        const confidenceEl = resultBox.querySelector(".confidence-text");
-        const durationEl = resultBox.querySelector(".duration-text");
-
-        if (verdictEl) {
-            verdictEl.textContent = result.verdict.toUpperCase();
-            if (result.verdict === "fake") {
-                verdictEl.style.color = "#ef4444";
-                resultBox.style.borderColor = "rgba(239, 68, 68, 0.4)";
-                resultBox.style.background = "rgba(239, 68, 68, 0.05)";
-            } else {
-                verdictEl.style.color = "#22c55e";
-                resultBox.style.borderColor = "rgba(34, 197, 94, 0.4)";
-                resultBox.style.background = "rgba(34, 197, 94, 0.05)";
-            }
-        }
-
-        if (confidenceEl) {
-            confidenceEl.textContent = "Confidence: " + Math.round(result.confidence * 100) + "%";
-        }
-
-        if (durationEl) {
-            durationEl.textContent = "Duration: " + result.duration_seconds + "s";
-        }
+        // Use big verdict display
+        const isFake = result.verdict === "fake";
+        resultBox.className = "verdict-huge " + (isFake ? "verdict-danger" : "verdict-safe");
+        
+        const icon = isFake ? "⚠️" : "✅";
+        const label = isFake ? "FAKE VOICE DETECTED" : "REAL - SAFE";
+        const sublabel = isFake 
+            ? "This voice shows signs of AI generation. Do NOT trust this caller." 
+            : "Voice patterns are consistent with natural human speech.";
+        
+        resultBox.innerHTML = 
+            '<div class="verdict-icon">' + icon + '</div>' +
+            '<div class="verdict-label">' + label + '</div>' +
+            '<div class="verdict-sublabel">' + sublabel + '</div>' +
+            '<div class="verdict-confidence" style="color:' + (isFake ? '#ef4444' : '#22c55e') + ';">Confidence: ' + Math.round(result.confidence * 100) + '%</div>' +
+            '<p style="color:#64748b;font-size:0.75rem;margin-top:8px;">Duration: ' + result.duration_seconds + 's</p>';
 
         // Render spectrogram
         if (spectrogramCanvas && result.spectrogram && result.spectrogram.data.length > 0) {
             renderSpectrogram(spectrogramCanvas, result.spectrogram);
         }
 
-        // Render signal checks
+        // Render signal checks with new grid format
         if (checksContainer && result.signal_checks) {
             renderSignalChecks(checksContainer, result.signal_checks);
         }
@@ -185,26 +177,29 @@ function spectrogramColor(v) {
 
 function renderSignalChecks(container, checks) {
     container.innerHTML = "";
+    
+    const grid = document.createElement("div");
+    grid.className = "check-grid";
 
     checks.forEach(function (check) {
         const passed = check.passed;
         const icon = passed ? "✓" : "✗";
-        const color = passed ? "#22c55e" : "#ef4444";
         const name = check.check_name.replace(/_/g, " ");
         const score = Math.round(check.score * 100);
 
         const div = document.createElement("div");
-        div.style.cssText = "padding:12px;margin-top:8px;border-radius:10px;background:rgba(15,23,42,0.6);border:1px solid " + (passed ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)") + ";";
-
+        div.className = "check-item";
         div.innerHTML =
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
-            '<span style="color:' + color + ';font-weight:700;text-transform:capitalize;">' + icon + " " + name + '</span>' +
-            '<span style="color:' + color + ';font-size:0.85rem;font-weight:700;">' + score + '%</span>' +
-            '</div>' +
-            '<p style="color:#94a3b8;font-size:0.75rem;margin:0;">' + check.detail + '</p>';
+            '<div class="check-icon ' + (passed ? "pass" : "fail") + '">' + icon + '</div>' +
+            '<div class="check-info">' +
+            '<div class="check-name">' + name + '</div>' +
+            '<div class="check-score">' + score + '% — ' + (passed ? 'Normal' : 'Suspicious') + '</div>' +
+            '</div>';
 
-        container.appendChild(div);
+        grid.appendChild(div);
     });
+
+    container.appendChild(grid);
 }
 
 
@@ -770,25 +765,22 @@ async function runDemoSample(sampleId) {
 
         // Display verdict
         if (resultBox) {
+            const isFake = result.verdict === "fake";
             resultBox.style.display = "block";
-            const verdictEl = resultBox.querySelector(".verdict-text");
-            const confidenceEl = resultBox.querySelector(".confidence-text");
-            const durationEl = resultBox.querySelector(".duration-text");
-
-            if (verdictEl) {
-                verdictEl.textContent = result.verdict.toUpperCase();
-                if (result.verdict === "fake") {
-                    verdictEl.style.color = "#ef4444";
-                    resultBox.style.borderColor = "rgba(239, 68, 68, 0.4)";
-                    resultBox.style.background = "rgba(239, 68, 68, 0.05)";
-                } else {
-                    verdictEl.style.color = "#22c55e";
-                    resultBox.style.borderColor = "rgba(34, 197, 94, 0.4)";
-                    resultBox.style.background = "rgba(34, 197, 94, 0.05)";
-                }
-            }
-            if (confidenceEl) confidenceEl.textContent = "Confidence: " + Math.round(result.confidence * 100) + "%";
-            if (durationEl) durationEl.textContent = "Duration: " + result.duration_seconds + "s | Sample: " + (result.demo_info ? result.demo_info.label : sampleId);
+            resultBox.className = "verdict-huge " + (isFake ? "verdict-danger" : "verdict-safe");
+            
+            const icon = isFake ? "⚠️" : "✅";
+            const label = isFake ? "FAKE VOICE DETECTED" : "REAL - SAFE";
+            const sublabel = isFake 
+                ? "This voice shows signs of AI generation." 
+                : "Voice patterns are consistent with natural human speech.";
+            
+            resultBox.innerHTML = 
+                '<div class="verdict-icon">' + icon + '</div>' +
+                '<div class="verdict-label">' + label + '</div>' +
+                '<div class="verdict-sublabel">' + sublabel + '</div>' +
+                '<div class="verdict-confidence" style="color:' + (isFake ? '#ef4444' : '#22c55e') + ';">Confidence: ' + Math.round(result.confidence * 100) + '%</div>' +
+                '<p style="color:#64748b;font-size:0.75rem;margin-top:8px;">Sample: ' + (result.demo_info ? result.demo_info.label : sampleId) + '</p>';
         }
 
         // Render spectrogram

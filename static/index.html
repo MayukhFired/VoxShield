@@ -8,6 +8,7 @@
     <title>VoxShield AI - Detect.Verify.Protect</title>
     <link rel="icon" type="image/png" href="/static/logo.png">
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/emergency.css">
     <!-- PWA -->
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#3b82f6">
@@ -44,16 +45,37 @@
             <p class="hero-label">AI-POWERED VOICE PROTECTION</p>
             <h1>Know Who's <span>Real.</span></h1>
             <p class="hero-description">
-                AI-powered voice protection against deepfakes, scams, and synthetic voices.
-                Detect cloned voices in real-time with 99% accuracy.
+                Received a suspicious call? Upload the audio or use your mic — 
+                we'll tell you in seconds if it's a real person or an AI clone.
             </p>
-            <div class="hero-buttons">
-                <a href="#detect">Start Detection</a>
-                <a href="#live">Try Live Mic</a>
+
+            <!-- QUICK ACTIONS — Big, tappable -->
+            <div class="action-grid">
+                <a href="#detect" class="action-card primary">
+                    <div class="action-card-icon">🔍</div>
+                    <div class="action-card-title">Check a Voice</div>
+                    <div class="action-card-desc">Upload audio to scan</div>
+                </a>
+                <a href="#live" class="action-card">
+                    <div class="action-card-icon">🎙️</div>
+                    <div class="action-card-title">Live Mic Scan</div>
+                    <div class="action-card-desc">Real-time detection</div>
+                </a>
+                <a href="/decloak.html" class="action-card">
+                    <div class="action-card-icon">🔓</div>
+                    <div class="action-card-title">Unmask Scammer</div>
+                    <div class="action-card-desc">Extract real identity</div>
+                </a>
+                <a href="/scamtrap.html" class="action-card">
+                    <div class="action-card-icon">🪤</div>
+                    <div class="action-card-title">Fight Back</div>
+                    <div class="action-card-desc">Deploy AI decoy</div>
+                </a>
             </div>
+
             <div class="trust-line">
                 <span class="status-dot"></span>
-                AI-powered voice security — Zero audio storage
+                AI-powered voice security — Zero audio storage — 94% detection accuracy
             </div>
         </section>
 
@@ -106,11 +128,8 @@
             </div>
 
             <!-- Detection Result -->
-            <div id="detectResult" style="display:none;">
-                <h3>Detection Result</h3>
-                <p class="verdict-text" style="font-size:1.8rem;font-weight:900;letter-spacing:0.05em;margin:12px 0;">—</p>
-                <p class="confidence-text" style="color:#94a3b8;">Confidence: —</p>
-                <p class="duration-text" style="color:#64748b;font-size:0.8rem;">Duration: —</p>
+            <div id="detectResult" class="verdict-huge" style="display:none;">
+                <!-- Filled dynamically by JS -->
             </div>
 
             <!-- Signal Checks -->
@@ -124,16 +143,16 @@
             <!-- Quick Demo -->
             <div>
                 <h3>Quick Demo — Try Pre-loaded Samples</h3>
-                <p style="color:#64748b;margin-bottom:12px;">No file needed. Click to instantly analyze our test samples:</p>
+                <p style="color:#64748b;margin-bottom:12px;">No file needed. Hear the difference between real and fake voices:</p>
                 <div style="display:flex;flex-wrap:wrap;gap:10px;">
                     <button type="button" onclick="runDemoSample('real_voice')" style="background:linear-gradient(135deg,#22c55e,#15803d);">
-                        ▶ Real Voice
+                        ✅ Real Human Voice
                     </button>
                     <button type="button" onclick="runDemoSample('fake_voice')" style="background:linear-gradient(135deg,#ef4444,#991b1b);">
-                        ▶ Fake Voice #1
+                        ⚠️ Fake: Kidnapping Scam
                     </button>
                     <button type="button" onclick="runDemoSample('fake_voice_2')" style="background:linear-gradient(135deg,#ef4444,#991b1b);">
-                        ▶ Fake Voice #2
+                        ⚠️ Fake: Bank Fraud
                     </button>
                 </div>
             </div>
@@ -290,6 +309,14 @@
         </div>
         <p>© 2025 VoxShield AI · Smart India Hackathon · All Rights Reserved</p>
     </footer>
+
+    <!-- EMERGENCY ACTION BAR — Always visible at bottom -->
+    <div class="emergency-bar">
+        <a href="#detect" class="em-detect">🔍 Scan Voice</a>
+        <a href="/decloak.html" class="em-decloak">🔓 De-Cloak</a>
+        <a href="/scamtrap.html" class="em-trap">🪤 ScamTrap</a>
+        <a href="/blacklist.html" class="em-blacklist">📋 Blacklist</a>
+    </div>
 
     <script src="/static/script.js"></script>
     <script>
