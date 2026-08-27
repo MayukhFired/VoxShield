@@ -34,10 +34,10 @@ class EnsembleDetector:
     
     # Individual signal check weights (must sum to 1.0)
     CHECK_WEIGHTS = {
-        "pitch_stability": 0.30,
-        "breath_presence": 0.20,
-        "silence_naturalness": 0.25,
-        "spectral_cutoff": 0.25,
+        "pitch_stability": 0.15,
+        "breath_presence": 0.10,
+        "silence_naturalness": 0.40,
+        "spectral_cutoff": 0.35,
     }
     
     def __init__(self):
@@ -113,9 +113,9 @@ class EnsembleDetector:
             signal_combined * signal_weight
         )
         
-        # Final verdict
-        verdict = "real" if ensemble_score > 0.5 else "fake"
-        confidence = abs(ensemble_score - 0.5) * 2  # Scale to 0-1 confidence
+        # Final verdict (threshold 0.65 — calibrated for real speech vs modern TTS)
+        verdict = "real" if ensemble_score > 0.65 else "fake"
+        confidence = abs(ensemble_score - 0.65) * 2.5  # Scale relative to threshold
         confidence = round(min(1.0, max(0.0, confidence)), 4)
         
         # Step 5: Generate spectrogram data for frontend visualization
