@@ -812,6 +812,35 @@ window.runDemoSample = runDemoSample;
 
 
 /* =========================================================
+   PWA INSTALL PROMPT
+========================================================= */
+
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Show install banner
+    const banner = document.createElement('div');
+    banner.id = 'installBanner';
+    banner.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;padding:14px 24px;border-radius:12px;box-shadow:0 10px 30px rgba(37,99,235,0.4);z-index:9999;display:flex;align-items:center;gap:12px;font-size:0.85rem;font-weight:600;';
+    banner.innerHTML = '<span>📱 Install VoxShield on your device</span><button onclick="installApp()" style="background:white;color:#2563eb;border:none;padding:8px 16px;border-radius:8px;font-weight:700;cursor:pointer;">Install</button><button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:1.2rem;">✕</button>';
+    document.body.appendChild(banner);
+});
+
+async function installApp() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const result = await deferredPrompt.userChoice;
+    console.log('Install:', result.outcome);
+    deferredPrompt = null;
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.remove();
+}
+window.installApp = installApp;
+
+
+/* =========================================================
    INIT
 ========================================================= */
 
