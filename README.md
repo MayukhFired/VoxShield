@@ -2,7 +2,14 @@
 
 > **Detect. Verify. Protect.**
 
-Real-time detection and prevention of voice cloning impersonation attacks. Built for Smart India Hackathon 2025 (CodeSprint 3.0).
+Research prototype for detecting potential voice-cloning indicators and helping
+users respond safely to suspected impersonation calls. Built for Smart India
+Hackathon 2025 (CodeSprint 3.0).
+
+> **Important:** This repository currently runs an interpretable signal-analysis
+> baseline unless separately versioned, compatible model weights are installed.
+> It is not a verified identity system and must not be used as the sole basis for
+> a fraud, account, legal, or law-enforcement decision.
 
 ---
 
@@ -16,8 +23,8 @@ Real-time detection and prevention of voice cloning impersonation attacks. Built
 ## Our Solution
 
 VoxShield AI is an AI-powered voice security platform that:
-1. **Detects** synthetic/cloned voices in real-time using acoustic signal analysis
-2. **De-Cloaks** the scammer's real voice hidden beneath their disguise
+1. **Flags potential indicators** of synthetic/cloned voices using acoustic signal analysis
+2. **Optionally correlates experimental voiceprints** across consented, suspicious submissions
 3. **Fights back** with an AI decoy that wastes scammers' time and collects evidence
 4. **Protects the community** through a shared blacklist database
 
@@ -28,8 +35,10 @@ VoxShield AI is an AI-powered voice security platform that:
 ### 1. Voice Authentication Detection
 Upload audio or stream from microphone → instant REAL/FAKE verdict with spectrogram visualization and detailed acoustic breakdown.
 
-### 2. Voice De-Cloaking (Novel)
-Extracts the scammer's **real underlying voiceprint** from cloned audio. If the same scammer calls again using a different voice or number, we identify them. Inspired by TRIDENT (arxiv 2607.23650, July 2025).
+### 2. Experimental Voiceprint Correlation
+Extracts acoustic features from consented suspicious audio and searches for
+similar prior submissions. Similarity is a research signal, not an identity or
+an attribution of wrongdoing. See [validation guidance](docs/VALIDATION.md).
 
 ### 3. ScamTrap AI (Novel)
 Deploys an AI persona that engages scammers in conversation — wasting their time while collecting intelligence about their tactics. Every minute wasted = a minute they can't scam real victims.
@@ -48,9 +57,11 @@ Interactive demo showing how detection works during actual phone calls.
 ## Quick Start
 
 ```bash
+py -3.10 -m venv backend/.venv
+.\backend\.venv\Scripts\Activate.ps1        # Windows PowerShell
+# source backend/.venv/bin/activate            # Linux/Mac
 cd backend
-.\venv\Scripts\activate        # Windows
-# source venv/bin/activate     # Linux/Mac
+pip install -r requirements.txt
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
@@ -81,10 +92,13 @@ Open **http://localhost:8000** — single server, full application.
 | **Pitch Stability** | Unnaturally stable F0 (low jitter/shimmer) |
 | **Breath Presence** | Absence of natural micro-breaths in pauses |
 
-### ML Model
-ResNet + BiGRU + Multi-Head Attention classifier trained on mel-spectrograms. Architecture supports pretrained weights for 98%+ accuracy on ASVspoof benchmark data.
+### ML status
+The checked-in baseline uses four heuristic acoustic checks. The model wrapper
+can load separately supplied compatible weights, but no validated model weights
+or benchmark results are distributed with this repository. Do not claim a
+specific accuracy until the evaluation plan has been completed.
 
-### Voice De-Cloaking Engine
+### Experimental voiceprint engine
 128-dimensional voiceprint extracted from 5 feature groups:
 - Temporal dynamics (speaking rhythm)
 - Residual pitch (micro-prosody that survives voice conversion)
@@ -151,17 +165,21 @@ VoxShield-AI/
 
 ## Privacy
 
-- **Zero audio storage** — files deleted immediately after analysis
+- **Temporary audio processing** — files are deleted immediately after analysis
 - **No transcription** — only acoustic feature analysis
 - **No cloud upload** — all processing on-server
-- **Voiceprints are non-reversible** — cannot reconstruct voice from fingerprint
+- **Opt-in experimental correlation** — fingerprints are stored only after
+  affirmative consent for suspicious audio; they are sensitive biometric data
+
+See [privacy and retention requirements](docs/PRIVACY.md) and the
+[validation plan](docs/VALIDATION.md) before deploying beyond a controlled demo.
 
 ---
 
 ## References
 
 - AASIST: Audio Anti-Spoofing using Integrated Spectro-Temporal Graph Attention Networks (Jung et al., ICASSP 2022)
-- TRIDENT: Recovering Source Speaker Identity from Voice Conversion (arxiv 2607.23650, July 2025)
+- TRIDENT: Recovering Source Speaker Identity from Voice Conversion (research inspiration; independently validate before relying on it)
 - ASVspoof Challenge: https://www.asvspoof.org/
 - Daisy AI (Virgin Media O2) — AI scambaiter concept
 

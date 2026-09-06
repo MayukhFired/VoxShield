@@ -2,6 +2,12 @@
 
 const API = "";
 
+function escapeHTML(value) {
+    const node = document.createElement("div");
+    node.textContent = String(value);
+    return node.innerHTML;
+}
+
 /* =========================
    FILE UPLOAD
 ========================= */
@@ -71,7 +77,7 @@ async function analyzeAudio() {
         showResult(data, resultDiv, specWrap, checksDiv);
     } catch (err) {
         resultDiv.style.display = "block";
-        resultDiv.innerHTML = '<div class="card" style="border-color:rgba(239,68,68,0.3);"><p style="color:#ef4444;">Error: ' + err.message + '</p></div>';
+        resultDiv.innerHTML = '<div class="card" style="border-color:rgba(239,68,68,0.3);"><p style="color:#ef4444;">Error: ' + escapeHTML(err.message) + '</p></div>';
     } finally {
         btn.textContent = "Analyze this voice";
         btn.disabled = false;
@@ -105,7 +111,7 @@ async function runDemoSample(sampleId) {
         const data = await res.json();
         showResult(data, resultDiv, specWrap, checksDiv);
     } catch (err) {
-        resultDiv.innerHTML = '<div class="card"><p style="color:#ef4444;">Error: ' + err.message + '. Make sure backend is running.</p></div>';
+        resultDiv.innerHTML = '<div class="card"><p style="color:#ef4444;">Error: ' + escapeHTML(err.message) + '. Make sure backend is running.</p></div>';
     }
 }
 window.runDemoSample = runDemoSample;
@@ -123,9 +129,9 @@ function showResult(data, resultDiv, specWrap, checksDiv) {
     resultDiv.innerHTML =
         '<div class="verdict ' + (isFake ? 'verdict-danger' : 'verdict-safe') + '">' +
             '<div class="verdict-icon">' + (isFake ? '⚠️' : '✓') + '</div>' +
-            '<div class="verdict-label">' + (isFake ? 'Fake Voice Detected' : 'Real Voice') + '</div>' +
-            '<div class="verdict-sub">' + (isFake ? 'This voice shows signs of AI generation.' : 'Voice patterns are consistent with natural speech.') + '</div>' +
-            '<div class="verdict-confidence" style="color:' + (isFake ? '#ef4444' : '#22c55e') + ';">' + Math.round(data.confidence * 100) + '% confidence</div>' +
+            '<div class="verdict-label">' + (isFake ? 'Potential Synthetic Voice' : 'Potentially Natural Voice') + '</div>' +
+            '<div class="verdict-sub">' + (isFake ? 'This baseline found acoustic indicators associated with synthetic audio.' : 'This baseline found acoustic patterns consistent with natural speech.') + '</div>' +
+            '<div class="verdict-confidence" style="color:' + (isFake ? '#ef4444' : '#22c55e') + ';">' + Math.round(data.confidence * 100) + '% heuristic score</div>' +
         '</div>';
 
     // Spectrogram
@@ -268,7 +274,19 @@ window.addEventListener("beforeinstallprompt", function(e) {
                     const riskClass = entry.status === "confirmed" ? "badge-danger" : entry.reports_count >= 2 ? "badge-warning" : "badge-safe";
                     const riskLabel = entry.status === "confirmed" ? "HIGH" : entry.reports_count >= 2 ? "MEDIUM" : "LOW";
                     const date = new Date(entry.last_reported).toLocaleDateString("en-GB", {day:"numeric",month:"short",year:"numeric"});
-                    tr.innerHTML = "<td>" + entry.phone_number + "</td><td><span class='badge " + riskClass + "'>" + riskLabel + "</span></td><td>" + entry.status.toUpperCase() + "</td><td>" + date + "</td>";
+                    const cells = [entry.phone_number, riskLabel, entry.status.toUpperCase(), date];
+                    cells.forEach(function(value, index) {
+                        const cell = document.createElement("td");
+                        if (index === 1) {
+                            const badge = document.createElement("span");
+                            badge.className = "badge " + riskClass;
+                            badge.textContent = value;
+                            cell.appendChild(badge);
+                        } else {
+                            cell.textContent = value;
+                        }
+                        tr.appendChild(cell);
+                    });
                     tbody.appendChild(tr);
                 });
             }

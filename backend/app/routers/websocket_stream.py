@@ -1,4 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from starlette.concurrency import run_in_threadpool
 import tempfile
 import os
 import json
@@ -101,7 +102,7 @@ async def stream_audio(websocket: WebSocket):
                     continue
 
                 # Run detection
-                result = detector.analyze(wav_path)
+                result = await run_in_threadpool(detector.analyze, wav_path)
 
                 # Serialize safely (remove spectrogram for speed on live stream)
                 result.pop("spectrogram", None)

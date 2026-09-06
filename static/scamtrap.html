@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ScamTrap AI — VoxShield AI</title>
     <link rel="icon" type="image/png" href="/static/logo.png">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=3">
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#3b82f6">
     <style>
@@ -459,7 +459,7 @@
                 div.className = "chat-message " + (isScammer ? "msg-scammer" : "msg-ai");
                 div.innerHTML =
                     '<div class="sender">' + (isScammer ? "🔴 SCAMMER" : persona.avatar + " " + persona.name + " (AI)") + '</div>' +
-                    '<div class="msg-text">' + msg.message + '</div>';
+                    '<div class="msg-text">' + escapeHTML(msg.message) + '</div>';
                 chat.appendChild(div);
                 chat.scrollTop = chat.scrollHeight;
 

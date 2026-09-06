@@ -74,7 +74,9 @@ async def add_report(phone_number: str, confidence_score: float, notes: Optional
         if existing:
             new_count = existing["reports_count"] + 1
             new_avg = ((existing["avg_confidence"] * existing["reports_count"]) + confidence_score) / new_count
-            status = "confirmed" if new_count >= 3 else "suspicious"
+            # Anonymous reports are evidence, not proof. A moderator must make
+            # any status change to confirmed after independent verification.
+            status = existing["status"]
             
             cursor.execute(
                 """UPDATE blacklisted_numbers 
@@ -143,8 +145,8 @@ async def check_blacklist(phone_number: str):
         conn.close()
 
 
-async def get_blacklist_page(page: int = 1, page_size: int = 20, sort_by: str = "reports_count"):
-    """Get a paginated list of blacklisted numbers."""
+async def get_blacklist_page(page: int = 1, page_size: int = 20, sort_by: str = "reports_count", status: Optional[str] = None):
+    """Get a paginated list of blacklisted numbers, optionally by status."""
     conn = get_connection()
     cursor = conn.cursor()
     
@@ -152,13 +154,15 @@ async def get_blacklist_page(page: int = 1, page_size: int = 20, sort_by: str = 
         offset = (page - 1) * page_size
         
         # Get total count
-        cursor.execute("SELECT COUNT(*) as total FROM blacklisted_numbers")
+        where_clause = "WHERE status = ?" if status else ""
+        params = (status,) if status else ()
+        cursor.execute(f"SELECT COUNT(*) as total FROM blacklisted_numbers {where_clause}", params)
         total = cursor.fetchone()["total"]
         
         # Get page
         cursor.execute(
-            f"SELECT * FROM blacklisted_numbers ORDER BY {sort_by} DESC LIMIT ? OFFSET ?",
-            (page_size, offset)
+            f"SELECT * FROM blacklisted_numbers {where_clause} ORDER BY {sort_by} DESC LIMIT ? OFFSET ?",
+            (*params, page_size, offset)
         )
         entries = [dict(row) for row in cursor.fetchall()]
         
@@ -181,7 +185,7 @@ async def search_blacklist(query: str):
     
     try:
         cursor.execute(
-            "SELECT * FROM blacklisted_numbers WHERE phone_number LIKE ? ORDER BY reports_count DESC LIMIT 20",
+            "SELECT * FROM blacklisted_numbers WHERE phone_number LIKE ? AND status = 'confirmed' ORDER BY reports_count DESC LIMIT 20",
             (f"%{query}%",)
         )
         entries = [dict(row) for row in cursor.fetchall()]
@@ -192,6 +196,24 @@ async def search_blacklist(query: str):
             "query": query
         }
     
+    finally:
+        conn.close()
+
+
+async def confirm_blacklist_number(phone_number: str) -> Optional[dict]:
+    """Mark a reported number confirmed after an authorized review."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "UPDATE blacklisted_numbers SET status = ? WHERE phone_number = ?",
+            ("confirmed", phone_number),
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            return None
+        cursor.execute("SELECT * FROM blacklisted_numbers WHERE phone_number = ?", (phone_number,))
+        return dict(cursor.fetchone())
     finally:
         conn.close()
 
@@ -219,9 +241,16 @@ def init_voiceprint_db():
             last_seen TEXT NOT NULL,
             times_seen INTEGER DEFAULT 1,
             linked_numbers TEXT DEFAULT '[]',
-            status TEXT DEFAULT 'active'
+            status TEXT DEFAULT 'active',
+            expires_at TEXT
         )
     """)
+
+    # Lightweight migrations for databases created by older prototype builds.
+    try:
+        cursor.execute("ALTER TABLE scammer_voiceprints ADD COLUMN expires_at TEXT")
+    except sqlite3.OperationalError:
+        pass
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS decloak_cases (
@@ -247,12 +276,35 @@ def init_voiceprint_db():
     conn.close()
 
 
+def purge_expired_voiceprints() -> int:
+    """Delete expired experimental biometric correlations and their case logs."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        now = datetime.utcnow().isoformat()
+        cursor.execute("SELECT id FROM scammer_voiceprints WHERE expires_at IS NOT NULL AND expires_at <= ?", (now,))
+        expired_ids = [row["id"] for row in cursor.fetchall()]
+        if not expired_ids:
+            return 0
+        placeholders = ",".join("?" for _ in expired_ids)
+        cursor.execute(f"DELETE FROM decloak_cases WHERE voiceprint_id IN ({placeholders})", expired_ids)
+        cursor.execute(f"DELETE FROM scammer_voiceprints WHERE id IN ({placeholders})", expired_ids)
+        conn.commit()
+        return len(expired_ids)
+    finally:
+        conn.close()
+
+
 async def store_voiceprint(fingerprint_hash: str, fingerprint_vector: list, confidence: float, phone_number: Optional[str] = None) -> dict:
     """Store a new scammer voiceprint or update if similar one exists."""
     import json
     conn = get_connection()
     cursor = conn.cursor()
+    from datetime import timedelta
+    from app.config import settings
+    purge_expired_voiceprints()
     now = datetime.utcnow().isoformat()
+    expires_at = (datetime.utcnow() + timedelta(days=settings.voiceprint_retention_days)).isoformat()
 
     try:
         # Check if this exact hash already exists
@@ -271,10 +323,10 @@ async def store_voiceprint(fingerprint_hash: str, fingerprint_vector: list, conf
 
             cursor.execute("""
                 UPDATE scammer_voiceprints
-                SET last_seen = ?, times_seen = ?, linked_numbers = ?,
+                SET last_seen = ?, times_seen = ?, linked_numbers = ?, expires_at = ?,
                     confidence = MAX(confidence, ?)
                 WHERE id = ?
-            """, (now, times, json.dumps(linked), confidence, existing["id"]))
+            """, (now, times, json.dumps(linked), expires_at, confidence, existing["id"]))
 
             conn.commit()
             voiceprint_id = existing["id"]
@@ -284,9 +336,9 @@ async def store_voiceprint(fingerprint_hash: str, fingerprint_vector: list, conf
             linked = json.dumps([phone_number] if phone_number else [])
             cursor.execute("""
                 INSERT INTO scammer_voiceprints
-                (fingerprint_hash, fingerprint_vector, confidence, first_seen, last_seen, times_seen, linked_numbers, status)
-                VALUES (?, ?, ?, ?, ?, 1, ?, 'active')
-            """, (fingerprint_hash, json.dumps(fingerprint_vector), confidence, now, now, linked))
+                (fingerprint_hash, fingerprint_vector, confidence, first_seen, last_seen, times_seen, linked_numbers, status, expires_at)
+                VALUES (?, ?, ?, ?, ?, 1, ?, 'active', ?)
+            """, (fingerprint_hash, json.dumps(fingerprint_vector), confidence, now, now, linked, expires_at))
 
             conn.commit()
             voiceprint_id = cursor.lastrowid

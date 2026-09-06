@@ -1,12 +1,12 @@
 """
 VoiceShield — Ensemble Detection Engine
 
-Combines the AASIST deep learning model with signal-based acoustic checks
+Combines an optional validated ML model with signal-based acoustic checks.
 to produce a final weighted verdict with rich interpretable output.
 
 Weights:
-    - AASIST model: 60% (primary, highly accurate)
-    - Signal checks: 40% (secondary, interpretable, catches edge cases)
+    - Validated ML model: 60% when explicitly installed and evaluated
+    - Signal checks: 100% in the shipped baseline
 """
 
 import os
@@ -24,7 +24,7 @@ from ml.signal_checks import run_all_checks
 
 class EnsembleDetector:
     """
-    Combines AASIST ML model + signal-based checks into a single
+    Combines an optional ML model + signal-based checks into a single
     detection pipeline with weighted scoring.
     """
     
@@ -74,14 +74,14 @@ class EnsembleDetector:
                 "error": "Audio too short. Need at least 0.5 seconds of speech.",
             }
         
-        # Step 2: Run AASIST model
+        # Step 2: Run optional validated model adapter
         aasist_result = self.aasist_detector.predict(audio_path)
         
         # Step 3: Run signal-based checks
         signal_results = run_all_checks(audio, sr)
         
         # Step 4: Calculate weighted ensemble score
-        # AASIST score: convert to "realness" score (1.0 = definitely real)
+        # Model score: convert to "realness" score (1.0 = definitely real)
         if aasist_result["label"] in ("error", "neutral"):
             aasist_realness = 0.5  # Neutral if model fails or unavailable
             # When model is unavailable, rely 100% on signal checks
@@ -113,11 +113,11 @@ class EnsembleDetector:
             signal_combined * signal_weight
         )
         
-        # Final verdict (threshold 0.65 — calibrated for real speech vs modern TTS)
+        # Baseline heuristic threshold. It is not a calibrated probability.
         verdict = "real" if ensemble_score > 0.65 else "fake"
         
         # Confidence: how far from threshold, scaled to be meaningful
-        # Real voices typically score 0.75-0.95, fakes score 0.3-0.6
+        # Confidence represents distance from the heuristic threshold, not accuracy.
         if verdict == "real":
             # Scale: 0.65→50%, 0.80→75%, 1.0→100%
             confidence = 0.5 + (ensemble_score - 0.65) * 1.43

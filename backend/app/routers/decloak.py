@@ -5,23 +5,26 @@ Unmasks the scammer's real voice fingerprint from cloned/converted audio.
 Stores the fingerprint and cross-matches against previously seen scammers.
 """
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
-import tempfile
 import os
 import json
+from app.security import enforce_rate_limit, normalize_phone_number
+from app.uploads import save_audio_upload
+from starlette.concurrency import run_in_threadpool
 
 router = APIRouter()
 
 
-class DecloakRequest(BaseModel):
-    phone_number: Optional[str] = None
-
-
 @router.post("/decloak")
-async def decloak_voice(file: UploadFile = File(...), phone_number: Optional[str] = None):
+async def decloak_voice(
+    request: Request,
+    file: UploadFile = File(...),
+    phone_number: Optional[str] = Form(None),
+    consent_to_store: bool = Form(False),
+):
     """
     Full de-cloaking pipeline:
     1. Detect if voice is real or fake
@@ -31,38 +34,57 @@ async def decloak_voice(file: UploadFile = File(...), phone_number: Optional[str
     
     Returns: detection result + voiceprint + matches from database
     """
-    # Validate file
-    allowed_extensions = [".wav", ".mp3", ".flac", ".ogg", ".m4a", ".webm"]
-    file_ext = os.path.splitext(file.filename or "")[1].lower()
-
-    if file_ext not in allowed_extensions:
-        raise HTTPException(status_code=400, detail="Unsupported audio format.")
-
-    contents = await file.read()
-    if len(contents) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="File too large. Max 10MB.")
+    enforce_rate_limit(request, "decloak")
+    if phone_number:
+        try:
+            phone_number = normalize_phone_number(phone_number)
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error))
 
     temp_path = None
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp:
-            tmp.write(contents)
-            temp_path = tmp.name
+        temp_path = await save_audio_upload(file)
 
         # Step 1: Run detection
         from ml.ensemble import EnsembleDetector
         detector = EnsembleDetector()
-        detection_result = detector.analyze(temp_path)
+        detection_result = await run_in_threadpool(detector.analyze, temp_path)
 
         if detection_result.get("verdict") == "error":
             raise HTTPException(status_code=400, detail=detection_result.get("error", "Analysis failed"))
 
-        # Step 2: Extract voiceprint (regardless of verdict — useful for both)
+        # A voiceprint is sensitive biometric data. Do not derive or persist it
+        # for authentic speech; fake-audio correlation additionally requires an
+        # explicit consent flag from the reporter.
+        if detection_result["verdict"] != "fake" or not consent_to_store:
+            return JSONResponse(content={
+                "detection": {
+                    "verdict": detection_result["verdict"],
+                    "confidence": detection_result["confidence"],
+                    "signal_checks": detection_result.get("signal_checks", []),
+                    "signal_summary": detection_result.get("signal_summary", {}),
+                },
+                "voiceprint": None,
+                "matches": [],
+                "case_id": None,
+                "summary": {
+                    "headline": "No voiceprint was stored",
+                    "threat_level": "low" if detection_result["verdict"] == "real" else "medium",
+                    "description": (
+                        "This sample appears authentic, so voiceprint correlation was not run."
+                        if detection_result["verdict"] == "real"
+                        else "Synthetic indicators were found, but experimental voiceprint correlation requires explicit consent."
+                    ),
+                },
+            })
+
+        # Step 2: Extract experimental voiceprint only after explicit consent.
         import librosa
         audio, sr = librosa.load(temp_path, sr=16000, mono=True)
 
         from ml.voiceprint import VoiceprintExtractor
         extractor = VoiceprintExtractor(sr=16000)
-        voiceprint = extractor.extract(audio)
+        voiceprint = await run_in_threadpool(extractor.extract, audio)
 
         # Step 3: Search for matching voiceprints in database
         from app.database import find_similar_voiceprints, store_voiceprint, record_decloak_case
@@ -134,7 +156,7 @@ async def decloak_statistics():
 
 @router.get("/decloak/scammer/{voiceprint_id}")
 async def get_scammer_details(voiceprint_id: int):
-    """Get full profile of a known scammer by their voiceprint ID."""
+    """Get a stored experimental voiceprint-correlation record."""
     from app.database import get_scammer_profile
     profile = await get_scammer_profile(voiceprint_id)
     if not profile:

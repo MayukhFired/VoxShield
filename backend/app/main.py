@@ -11,6 +11,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 sys.path.insert(0, PROJECT_ROOT)
 
 from app.routers import detect, blacklist, websocket_stream, demo, decloak, scamtrap
+from app.config import settings
 
 app = FastAPI(
     title="VoiceShield API",
@@ -18,11 +19,12 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS — allow all origins for development
+# CORS must name the frontend origins explicitly. Wildcard origins combined
+# with credentials are unsafe and do not work consistently in browsers.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=settings.allowed_origins,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

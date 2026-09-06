@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voice De-Cloaking — VoxShield AI</title>
     <link rel="icon" type="image/png" href="/static/logo.png">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=3">
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#3b82f6">
     <style>
@@ -203,13 +203,17 @@
             <!-- UPLOAD -->
             <div class="blacklist-card">
                 <h2>Upload Suspicious Audio</h2>
-                <p>Upload a voice recording to de-cloak the scammer's real identity.</p>
+                    <p>Analyze a suspicious recording. Experimental correlation is optional and never identifies a person by itself.</p>
 
                 <form id="decloakForm">
                     <input type="file" id="decloakFile" accept="audio/*" required
                         style="padding:17px;color:#64748b;background:rgba(2,6,23,0.6);border:1px dashed rgba(239,68,68,0.4);">
                     <input type="text" id="decloakPhone" placeholder="Caller phone number (optional)"
                         style="margin-top:10px;">
+                    <label style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;color:#94a3b8;font-size:.82rem;line-height:1.4;">
+                        <input type="checkbox" id="voiceprintConsent" style="width:auto;margin-top:3px;">
+                        I have authority to submit this recording and consent to storing an experimental, non-audio voiceprint for correlation. It may be deleted on request.
+                    </label>
                     <button type="submit" id="decloakBtn"
                         style="background:linear-gradient(135deg,#ef4444,#991b1b);margin-top:10px;">
                         🔓 De-Cloak Voice
@@ -254,7 +258,7 @@
                 <!-- Database Matches -->
                 <div class="blacklist-card" id="matchesSection">
                     <h2>Database Matches</h2>
-                    <p>Cross-referencing against known scammer voiceprints:</p>
+                    <p>Comparing with prior consented experimental voiceprints:</p>
                     <div id="matchesList"></div>
                 </div>
 
@@ -271,6 +275,12 @@
 
     <script>
     const API = "";
+
+    function escapeHTML(value) {
+        const node = document.createElement("div");
+        node.textContent = String(value);
+        return node.innerHTML;
+    }
 
     // Load stats on page load
     (async function loadStats() {
@@ -306,9 +316,10 @@
         const formData = new FormData();
         formData.append("file", file);
         if (phone) formData.append("phone_number", phone);
+        formData.append("consent_to_store", document.getElementById("voiceprintConsent").checked ? "true" : "false");
 
         try {
-            const r = await fetch(API + "/api/decloak" + (phone ? "?phone_number=" + encodeURIComponent(phone) : ""), {
+            const r = await fetch(API + "/api/decloak", {
                 method: "POST",
                 body: formData
             });
@@ -345,6 +356,17 @@
         document.getElementById("threatDescription").textContent = summary.description;
 
         banner.className = "threat-banner threat-" + summary.threat_level;
+
+        // Experimental voiceprint details are available only after explicit consent.
+        if (!vp) {
+            document.getElementById("fpHash").textContent = "Not stored";
+            document.getElementById("vpId").textContent = "—";
+            document.getElementById("vpConf").textContent = "—";
+            document.getElementById("vpSeen").textContent = "—";
+            document.getElementById("matchesList").textContent = "Voiceprint correlation was not run.";
+            renderDetection(detection);
+            return;
+        }
 
         // Voiceprint hash
         document.getElementById("fpHash").textContent = "VP:" + vp.fingerprint_hash.toUpperCase();
@@ -473,7 +495,7 @@
         const container = document.getElementById("matchesList");
 
         if (!matches || matches.length === 0) {
-            container.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px;">No matches found — this is a NEW scammer voiceprint. Now stored for future identification.</p>';
+            container.innerHTML = '<p style="color:#64748b;text-align:center;padding:20px;">No correlation matches found. This is not an identity determination.</p>';
             return;
         }
 
@@ -490,7 +512,7 @@
                 '<div style="text-align:right;">' +
                 '<div style="color:white;font-weight:700;">Scammer #' + m.voiceprint_id + '</div>' +
                 '<div style="color:#94a3b8;font-size:0.75rem;">Seen ' + m.times_seen + ' time(s)</div>' +
-                '<div style="color:#94a3b8;font-size:0.7rem;">Numbers: ' + (m.linked_numbers.join(", ") || "unknown") + '</div>' +
+                '<div style="color:#94a3b8;font-size:0.7rem;">Numbers: ' + escapeHTML(m.linked_numbers.join(", ") || "unknown") + '</div>' +
                 '</div>' +
                 '</div>';
             container.appendChild(div);

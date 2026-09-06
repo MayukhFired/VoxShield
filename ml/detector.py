@@ -1,10 +1,11 @@
 """
-VoiceShield — AASIST-based Voice Authenticity Detector
+VoiceShield — optional model adapter.
 
-Uses the pretrained AASIST (Audio Anti-Spoofing using Integrated Spectro-Temporal 
-Graph Attention Networks) model to classify audio as real or synthetic.
-
-Model achieves 0.83% EER on ASVspoof 2019 LA evaluation set.
+The shipped application does not include validated model weights. This adapter
+therefore returns a neutral result and lets the explicitly labelled signal
+baseline handle analysis. Do not attach arbitrary weights to the placeholder
+network below: a compatible architecture, preprocessing contract, calibration,
+and evaluation report are required first.
 """
 
 import os
@@ -19,7 +20,7 @@ try:
 except ImportError:
     TORCH_AVAILABLE = False
 
-# Path to pretrained model weights
+# Reserved path for a future validated model package.
 MODEL_DIR = os.path.join(os.path.dirname(__file__), "models")
 AASIST_WEIGHTS = os.path.join(MODEL_DIR, "AASIST.pth")
 
@@ -48,37 +49,17 @@ class VoiceAuthenticityDetector:
             self.device = None
     
     def load_model(self):
-        """Load the AASIST pretrained model."""
+        """Mark the optional model path unavailable until it is validated."""
         if self._loaded:
             return
         
-        if not TORCH_AVAILABLE:
-            print("[INFO] PyTorch not installed. Signal-checks-only mode.")
-            self.model = None
-            self._loaded = True
-            return
-        
-        if os.path.exists(AASIST_WEIGHTS):
-            self.model = self._build_model()
-            checkpoint = torch.load(AASIST_WEIGHTS, map_location=self.device)
-            if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
-                self.model.load_state_dict(checkpoint["model_state_dict"], strict=False)
-            else:
-                self.model.load_state_dict(checkpoint, strict=False)
-            self.model.to(self.device)
-            self.model.eval()
-            print("[INFO] AASIST model loaded with pretrained weights.")
-        else:
-            self.model = None
-            print("[INFO] No pretrained weights. Signal-checks-only mode.")
+        self.model = None
+        print("[INFO] Validated ML model not configured. Signal-baseline mode.")
         
         self._loaded = True
     
     def _build_model(self):
-        """Build a lightweight spoofing detection model."""
-        # Simplified model architecture for inference
-        # Full AASIST uses graph attention — this is a placeholder
-        # that works with or without pretrained weights
+        """Reserved for a future validated model implementation."""
         model = nn.Sequential(
             nn.Conv1d(1, 32, kernel_size=128, stride=16, padding=64),
             nn.BatchNorm1d(32),
@@ -137,7 +118,7 @@ class VoiceAuthenticityDetector:
                 "label": "neutral",
                 "confidence": 0.5,
                 "raw_scores": {"bonafide": 0.5, "spoof": 0.5},
-                "note": "AASIST model unavailable — using signal-based detection only"
+                "note": "Validated ML model unavailable — using signal baseline only"
             }
         
         try:

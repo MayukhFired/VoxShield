@@ -1,0 +1,3 @@
+path,split,label,source,license_or_permission,consent_status,language,generator_or_recording_notes
+data/demo/real_voice.wav,demo,bonafide,replace-with-source,replace-with-license,verified,replace-with-language,recording provenance required
+data/demo/fake_voice.wav,demo,synthetic,replace-with-source,replace-with-license,verified,replace-with-language,generator and version required
