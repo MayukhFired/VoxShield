@@ -279,6 +279,23 @@
                     </div>
                 </div>
 
+                <!-- TTS Audio Synthesis Toggle -->
+                <div class="blacklist-card" style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;">
+                    <div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span style="font-size:1.2rem;">🔊</span>
+                            <strong style="color:white;font-size:0.95rem;">High-quality cloud voice</strong>
+                            <span style="background:rgba(59,130,246,0.2);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);font-size:0.65rem;padding:2px 6px;border-radius:4px;font-weight:700;">NEW</span>
+                        </div>
+                        <p style="color:#64748b;font-size:0.78rem;margin-top:4px;">Off by default. When enabled, persona text is sent to a TTS provider. Browser speech stays local when available.</p>
+                    </div>
+                    <label style="position:relative;display:inline-block;width:50px;height:26px;cursor:pointer;">
+                        <input type="checkbox" id="cloudTtsToggle" style="opacity:0;width:0;height:0;">
+                        <span id="ttsSlider" style="position:absolute;top:0;left:0;right:0;bottom:0;background-color:#475569;transition:.3s;border-radius:26px;"></span>
+                        <span id="ttsKnob" style="position:absolute;content:'';height:20px;width:20px;left:3px;bottom:3px;background-color:white;transition:.3s;border-radius:50%;"></span>
+                    </label>
+                </div>
+
                 <!-- Deploy Button -->
                 <div style="text-align:center;margin-top:20px;">
                     <button type="button" id="deployBtn" onclick="deployTrap()"
@@ -288,6 +305,7 @@
                 </div>
 
             </div>
+
 
             <!-- CONVERSATION PANEL (shown after deploy) -->
             <div id="conversationPanel" style="display:none;">
@@ -457,21 +475,26 @@
 
                 const div = document.createElement("div");
                 div.className = "chat-message " + (isScammer ? "msg-scammer" : "msg-ai");
+                const safeMsg = escapeHTML(msg.message);
                 div.innerHTML =
-                    '<div class="sender">' + (isScammer ? "🔴 SCAMMER" : persona.avatar + " " + persona.name + " (AI)") + '</div>' +
-                    '<div class="msg-text">' + escapeHTML(msg.message) + '</div>';
+                    '<div class="sender" style="display:flex;justify-content:space-between;align-items:center;">' +
+                        '<span>' + (isScammer ? "🔴 SCAMMER" : persona.avatar + " " + persona.name + " (AI)") + '</span>' +
+                        (!isScammer ? '<button class="tts-listen-btn" onclick="speakPersona(this.getAttribute(\'data-text\'), selectedPersona)" data-text="' + safeMsg.replace(/"/g, '&quot;') + '" style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);color:#60a5fa;cursor:pointer;font-size:0.7rem;padding:2px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;">🔊 Listen</button>' : '') +
+                    '</div>' +
+                    '<div class="msg-text">' + safeMsg + '</div>';
                 chat.appendChild(div);
                 chat.scrollTop = chat.scrollHeight;
 
-                // Update stats
+                // Update stats & play persona voice speech
                 if (!isScammer) {
                     const turns = Math.ceil((msgIndex + 1) / 2);
                     document.getElementById("turnsValue").textContent = turns;
+                    speakPersona(msg.message, selectedPersona);
                 }
 
                 msgIndex++;
                 // Next message after a realistic delay
-                const nextDelay = isScammer ? 2000 : 3000;
+                const nextDelay = isScammer ? 2000 : 3500;
                 setTimeout(showNextMessage, nextDelay);
             }, delay);
         }
@@ -529,11 +552,57 @@
         btn.textContent = "🪤 Deploy ScamTrap AI";
     }
 
+    async function speakPersona(text, personaId) {
+        if (!text || !text.strip ? !text.trim() : !text) return;
+        const toggle = document.getElementById("cloudTtsToggle");
+
+        if (toggle && toggle.checked) {
+            try {
+            const res = await fetch(API + "/api/scamtrap/tts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: text, persona_id: personaId || selectedPersona })
+            });
+
+            if (res.ok) {
+                const blob = await res.blob();
+                if (blob.size > 200) {
+                    const audioUrl = URL.createObjectURL(blob);
+                    const audio = new Audio(audioUrl);
+                    audio.addEventListener("ended", function() { URL.revokeObjectURL(audioUrl); }, { once: true });
+                    audio.play().catch(function() {});
+                    return;
+                }
+            }
+            } catch (err) {
+                console.warn("Cloud TTS failed; using browser speech:", err);
+            }
+        }
+
+        // Web Speech API client fallback
+        if ("speechSynthesis" in window) {
+            try {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                const pid = personaId || selectedPersona;
+                if (pid === "elderly_grandma") {
+                    u.pitch = 1.25; u.rate = 0.8; u.lang = "hi-IN";
+                } else if (pid === "nervous_uncle") {
+                    u.pitch = 0.9; u.rate = 0.9; u.lang = "en-IN";
+                } else if (pid === "chatty_student") {
+                    u.pitch = 1.15; u.rate = 1.15; u.lang = "en-IN";
+                }
+                window.speechSynthesis.speak(u);
+            } catch (e) {}
+        }
+    }
+
     function formatTime(sec) {
         const m = Math.floor(sec / 60);
         const s = sec % 60;
         return m.toString().padStart(2, "0") + ":" + s.toString().padStart(2, "0");
     }
+
     </script>
 
 </body>

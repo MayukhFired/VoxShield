@@ -13,11 +13,12 @@ For the demo: We simulate a conversation between our AI persona and a
 scammer using pre-scripted exchanges that showcase the concept.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 import time
 import random
+from app.security import enforce_rate_limit
 
 router = APIRouter()
 
@@ -334,7 +335,6 @@ async def trap_turn(request: TrapTurnRequest):
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    scenario = SCENARIOS[session["scenario_id"]]
     turn = request.turn
 
     # Generate AI response
@@ -461,3 +461,33 @@ async def list_personas():
 async def list_scenarios():
     """List available scam scenarios."""
     return {"scenarios": {k: {"title": v["title"], "opening": v["scammer_opening"][:80] + "..."} for k, v in SCENARIOS.items()}}
+
+
+class TTSRequest(BaseModel):
+    text: str
+    persona_id: Optional[str] = "elderly_grandma"
+
+
+@router.post("/scamtrap/tts")
+async def generate_tts(http_request: Request, request: TTSRequest):
+    """
+    Synthesize text into speech audio for a given AI persona.
+    Returns: audio/mpeg MP3 stream for direct browser playback.
+    """
+    if not request.text or not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text content cannot be empty.")
+
+    if len(request.text) > 2000:
+        raise HTTPException(status_code=400, detail="Text exceeds 2000 character limit.")
+    if request.persona_id not in PERSONAS:
+        raise HTTPException(status_code=400, detail="Unknown persona.")
+    enforce_rate_limit(http_request, "scamtrap-tts")
+
+    try:
+        from app.tts import TTSUnavailableError, synthesize_speech
+        audio_bytes = await synthesize_speech(request.text, request.persona_id or "elderly_grandma")
+        return Response(content=audio_bytes, media_type="audio/mpeg")
+    except TTSUnavailableError as error:
+        raise HTTPException(status_code=503, detail=str(error))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"TTS synthesis failed: {str(e)}")

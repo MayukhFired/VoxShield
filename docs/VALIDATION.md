@@ -18,6 +18,19 @@ law-enforcement, banking, account-access, or identity decisions.
 5. Run regression tests against a versioned, consented evaluation fixture set
    before every release.
 
+## Reproducible baseline report
+
+Create a private `data/DATASET_MANIFEST.csv` from the supplied example and fill
+in every file's source, consent, license, label, and split. Then run:
+
+```bash
+python scripts/evaluate_baseline.py data/DATASET_MANIFEST.csv --output reports/baseline.json
+```
+
+Treat that JSON report as a result for that exact manifest only. Never combine
+demo files, training files, and held-out evaluation files in the same claimed
+metric.
+
 ## Voiceprint correlation
 
 The current voiceprint feature extractor is experimental. Validate it only on

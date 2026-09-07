@@ -20,6 +20,8 @@ class Settings:
     rate_limit_per_minute: int
     voiceprint_retention_days: int
     admin_token: str | None
+    enable_cloud_tts: bool
+    tts_timeout_seconds: int
 
 
 settings = Settings(
@@ -30,4 +32,6 @@ settings = Settings(
     rate_limit_per_minute=int(os.getenv("VOXSHIELD_RATE_LIMIT_PER_MINUTE", "30")),
     voiceprint_retention_days=int(os.getenv("VOXSHIELD_VOICEPRINT_RETENTION_DAYS", "30")),
     admin_token=os.getenv("VOXSHIELD_ADMIN_TOKEN") or None,
+    enable_cloud_tts=os.getenv("VOXSHIELD_ENABLE_CLOUD_TTS", "false").lower() == "true",
+    tts_timeout_seconds=int(os.getenv("VOXSHIELD_TTS_TIMEOUT_SECONDS", "12")),
 )

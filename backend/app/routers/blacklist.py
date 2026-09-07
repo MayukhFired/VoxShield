@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Request, Header
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, field_validator
 from typing import Optional
-from datetime import datetime
 from app.security import enforce_rate_limit, normalize_phone_number, require_admin
 
 router = APIRouter()
@@ -12,20 +11,23 @@ class ReportRequest(BaseModel):
     confidence_score: Optional[float] = None
     notes: Optional[str] = None
 
-    @validator("phone_number")
+    @field_validator("phone_number")
+    @classmethod
     def validate_phone_number(cls, value):
         try:
             return normalize_phone_number(value)
         except ValueError as error:
             raise ValueError(str(error))
 
-    @validator("confidence_score")
+    @field_validator("confidence_score")
+    @classmethod
     def validate_confidence(cls, value):
         if value is not None and not 0 <= value <= 1:
             raise ValueError("confidence_score must be between 0 and 1")
         return value
 
-    @validator("notes")
+    @field_validator("notes")
+    @classmethod
     def limit_notes(cls, value):
         if value and len(value) > 500:
             raise ValueError("notes must be 500 characters or fewer")

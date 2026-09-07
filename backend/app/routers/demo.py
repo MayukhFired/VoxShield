@@ -6,7 +6,6 @@ for reliable live presentations. No upload needed, instant results.
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 import os
-import json
 
 router = APIRouter()
 

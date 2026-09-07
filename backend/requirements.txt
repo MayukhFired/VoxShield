@@ -13,3 +13,5 @@ aiosqlite==0.19.0
 databases==0.8.0
 python-jose==3.3.0
 imageio-ffmpeg==0.6.0
+edge-tts==6.1.14
+gtts==2.5.4

@@ -33,7 +33,8 @@ VoxShield AI is an AI-powered voice security platform that:
 ## Features
 
 ### 1. Voice Authentication Detection
-Upload audio or stream from microphone → instant REAL/FAKE verdict with spectrogram visualization and detailed acoustic breakdown.
+Upload audio or stream from a microphone to receive a heuristic indicator with a
+spectrogram and acoustic breakdown. It is not a verified real/fake determination.
 
 ### 2. Experimental Voiceprint Correlation
 Extracts acoustic features from consented suspicious audio and searches for
@@ -41,7 +42,9 @@ similar prior submissions. Similarity is a research signal, not an identity or
 an attribution of wrongdoing. See [validation guidance](docs/VALIDATION.md).
 
 ### 3. ScamTrap AI (Novel)
-Deploys an AI persona that engages scammers in conversation — wasting their time while collecting intelligence about their tactics. Every minute wasted = a minute they can't scam real victims.
+Runs a scripted, controlled demonstration of an AI persona that delays scammer
+tactics and highlights potential indicators. It is not connected to real phone
+calls and must not autonomously engage real people.
 
 ### 4. Community Blacklist
 Reported scam numbers are shared across all users. When one person catches a scammer, everyone is protected.
@@ -98,6 +101,9 @@ can load separately supplied compatible weights, but no validated model weights
 or benchmark results are distributed with this repository. Do not claim a
 specific accuracy until the evaluation plan has been completed.
 
+Use the included local evaluation harness with a consented, labeled manifest to
+produce a reproducible baseline report; see [validation guidance](docs/VALIDATION.md).
+
 ### Experimental voiceprint engine
 128-dimensional voiceprint extracted from 5 feature groups:
 - Temporal dynamics (speaking rhythm)
@@ -145,7 +151,7 @@ VoxShield-AI/
 │   └── requirements.txt
 ├── static/                     # PWA Frontend
 │   ├── index.html, blacklist.html, decloak.html, scamtrap.html
-│   ├── style.css, emergency.css, script.js
+│   ├── style.css, script.js
 │   ├── manifest.json, sw.js   # PWA support
 │   └── icons
 ├── ml/                         # AI Detection Engine
@@ -153,7 +159,7 @@ VoxShield-AI/
 │   ├── signal_checks.py       # 4 acoustic analyzers
 │   ├── ensemble.py            # Weighted scoring
 │   ├── voiceprint.py          # De-cloaking fingerprint
-│   └── ssl_model.py           # ResNet+GRU classifier
+│   └── voiceprint.py          # Experimental correlation features
 ├── data/
 │   ├── demo/                  # Quick demo audio
 │   ├── real/                  # Real voice samples
@@ -167,12 +173,25 @@ VoxShield-AI/
 
 - **Temporary audio processing** — files are deleted immediately after analysis
 - **No transcription** — only acoustic feature analysis
-- **No cloud upload** — all processing on-server
+- **Local-by-default speech** — browser speech is used for ScamTrap when available.
+  Optional cloud TTS is disabled by default and sends scripted persona text to
+  an external provider only after the user enables it.
 - **Opt-in experimental correlation** — fingerprints are stored only after
   affirmative consent for suspicious audio; they are sensitive biometric data
 
 See [privacy and retention requirements](docs/PRIVACY.md) and the
 [validation plan](docs/VALIDATION.md) before deploying beyond a controlled demo.
+
+## Deployment checklist
+
+1. Install from `backend/requirements-deploy.txt` (or root
+   `requirements-deploy.txt` when the host builds from the repository root).
+2. Set `VOXSHIELD_ALLOWED_ORIGINS` to the exact HTTPS frontend URL; do not use
+   a wildcard.
+3. Set a long random `VOXSHIELD_ADMIN_TOKEN` before enabling moderator actions.
+4. Keep `VOXSHIELD_ENABLE_CLOUD_TTS=false` unless you add a provider disclosure
+   and accept that persona text leaves your server.
+5. Run `pytest tests -q` from `backend` before every release.
 
 ---
 

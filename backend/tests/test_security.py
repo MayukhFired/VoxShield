@@ -21,7 +21,7 @@ def test_rate_limit_rejects_excess_requests(monkeypatch):
     monkeypatch.setattr(
         security,
         "settings",
-        Settings("test", [], 1024, 1, 1, None),
+        Settings("test", [], 1024, 1, 1, None, False, 12),
     )
     request = SimpleNamespace(client=SimpleNamespace(host="test-client"))
     security.enforce_rate_limit(request, "test")

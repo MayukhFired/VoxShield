@@ -14,3 +14,10 @@ Caller reports remain `suspicious` until a deployment administrator independentl
 reviews and confirms them. Anonymous reports alone do not establish wrongdoing.
 
 Do not upload another person's recording unless you have authority to do so.
+
+## ScamTrap speech
+
+Browser speech is used by default where supported. The optional high-quality
+cloud voice toggle sends only scripted AI-persona dialogue (not uploaded audio)
+to a configured Microsoft Edge or Google TTS service. It is off by default and
+must remain off unless a deployment presents a clear provider disclosure.

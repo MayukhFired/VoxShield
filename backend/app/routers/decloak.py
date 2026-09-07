@@ -7,10 +7,8 @@ Stores the fingerprint and cross-matches against previously seen scammers.
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
 from typing import Optional
 import os
-import json
 from app.security import enforce_rate_limit, normalize_phone_number
 from app.uploads import save_audio_upload
 from starlette.concurrency import run_in_threadpool

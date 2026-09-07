@@ -46,9 +46,11 @@ async def detect_voice(request: Request, file: UploadFile = File(...)):
         
         return JSONResponse(content=result_json)
     
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
-    
+
     finally:
         # Privacy-first: always delete uploaded audio immediately
         if temp_path and os.path.exists(temp_path):

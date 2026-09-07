@@ -413,3 +413,23 @@ footer a:hover { color: #f1f5f9; }
     font-size: 0.9rem; color: white; transition: all 0.2s;
 }
 .blacklist-card form button:hover { transform: translateY(-1px); opacity: 0.9; }
+
+/* TTS Voice Synthesis Styling */
+.tts-listen-btn {
+    transition: all 0.2s ease;
+}
+.tts-listen-btn:hover {
+    background: rgba(59, 130, 246, 0.3) !important;
+    border-color: #3b82f6 !important;
+    color: #ffffff !important;
+    transform: scale(1.05);
+}
+#cloudTtsToggle:checked + #ttsSlider {
+    background-color: #3b82f6 !important;
+}
+#cloudTtsToggle:not(:checked) + #ttsSlider {
+    background-color: #334155 !important;
+}
+#cloudTtsToggle:not(:checked) ~ #ttsKnob {
+    left: 4px !important;
+}

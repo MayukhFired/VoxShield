@@ -2,7 +2,6 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from starlette.concurrency import run_in_threadpool
 import tempfile
 import os
-import json
 import subprocess
 
 router = APIRouter()
