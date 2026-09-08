@@ -41,10 +41,8 @@ Extracts acoustic features from consented suspicious audio and searches for
 similar prior submissions. Similarity is a research signal, not an identity or
 an attribution of wrongdoing. See [validation guidance](docs/VALIDATION.md).
 
-### 3. ScamTrap AI (Novel)
-Runs a scripted, controlled demonstration of an AI persona that delays scammer
-tactics and highlights potential indicators. It is not connected to real phone
-calls and must not autonomously engage real people.
+### 3. ScamTrap AI with Voice Synthesis (TTS) (Novel)
+Runs a controlled demonstration of AI personas (Grandma Kamla Devi, Uncle Rajesh Kumar, Student Priya Sharma) that delay scammers and waste their time. Supports real-time Neural Text-to-Speech (TTS) voice synthesis via Microsoft Edge TTS / gTTS and browser Web Speech API fallback.
 
 ### 4. Community Blacklist
 Reported scam numbers are shared across all users. When one person catches a scammer, everyone is protected.
@@ -60,15 +58,24 @@ Interactive demo showing how detection works during actual phone calls.
 ## Quick Start
 
 ```bash
-py -3.10 -m venv backend/.venv
-.\backend\.venv\Scripts\Activate.ps1        # Windows PowerShell
-# source backend/.venv/bin/activate            # Linux/Mac
+# 1. Clone repository
+git clone https://github.com/MayukhFired/VoxShield.git
+cd "Voice cloning detector"
+
+# 2. Create and activate virtual environment
+python -m venv backend/venv
+.\backend\venv\Scripts\Activate.ps1        # Windows PowerShell
+# source backend/venv/bin/activate          # Linux / macOS
+
+# 3. Install requirements
+pip install -r backend/requirements.txt
+
+# 4. Start single-server application
 cd backend
-pip install -r requirements.txt
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-Open **http://localhost:8000** — single server, full application.
+Open **http://localhost:8000** in your browser — full Progressive Web Application (PWA).
 
 ---
 
@@ -76,12 +83,13 @@ Open **http://localhost:8000** — single server, full application.
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Python, FastAPI, Uvicorn |
+| Backend | Python 3.13, FastAPI, Uvicorn |
 | Frontend | HTML5, CSS3, Vanilla JavaScript (PWA) |
 | ML/AI | PyTorch, librosa, NumPy, SciPy |
-| Database | SQLite (zero-config) |
+| Speech Synthesis | edge-tts (Microsoft Neural Voices), gTTS, Web Speech API |
+| Database | SQLite (WAL mode, zero-config) |
 | Real-time | WebSocket, Web Audio API |
-| Audio | ffmpeg (imageio-ffmpeg), soundfile |
+| Audio Processing | ffmpeg (imageio-ffmpeg), soundfile |
 
 ---
 
@@ -121,15 +129,16 @@ produce a reproducible baseline report; see [validation guidance](docs/VALIDATIO
 | GET | `/` | Main application |
 | GET | `/health` | Health check |
 | POST | `/api/detect` | Upload audio for detection |
-| WS | `/ws/stream` | Live mic WebSocket |
-| POST | `/api/decloak` | Voice de-cloaking + fingerprint |
+| WS | `/ws/stream` | Live mic WebSocket streaming |
+| POST | `/api/decloak` | Voice de-cloaking + fingerprint correlation |
 | GET | `/api/decloak/stats` | De-cloaking statistics |
-| POST | `/api/scamtrap/auto` | Run ScamTrap conversation |
-| GET | `/api/demo/samples` | List demo samples |
-| GET | `/api/demo/analyze/{id}` | Analyze demo sample |
-| POST | `/api/blacklist/report` | Report scam number |
-| GET | `/api/blacklist/check/{number}` | Check if blacklisted |
-| GET | `/api/blacklist/list` | Paginated blacklist |
+| POST | `/api/scamtrap/auto` | Run ScamTrap AI conversation |
+| POST | `/api/scamtrap/tts` | Synthesize persona speech (audio/mpeg stream) |
+| GET | `/api/demo/samples` | List demo audio samples |
+| GET | `/api/demo/analyze/{id}` | Analyze demo audio sample |
+| POST | `/api/blacklist/report` | Report scam phone number |
+| GET | `/api/blacklist/check/{number}` | Check if number is blacklisted |
+| GET | `/api/blacklist/list` | Paginated public blacklist (confirmed entries) |
 
 ---
 
@@ -141,10 +150,11 @@ VoxShield-AI/
 │   ├── app/
 │   │   ├── main.py            # Entry point + static serving
 │   │   ├── database.py        # SQLite (blacklist + voiceprints)
+│   │   ├── tts.py             # Neural TTS Voice Synthesis Engine
 │   │   └── routers/
 │   │       ├── detect.py      # Audio detection API
 │   │       ├── decloak.py     # Voice de-cloaking API
-│   │       ├── scamtrap.py    # ScamTrap AI engine
+│   │       ├── scamtrap.py    # ScamTrap AI engine + TTS endpoint
 │   │       ├── blacklist.py   # Community blacklist
 │   │       ├── demo.py        # Pre-loaded demo samples
 │   │       └── websocket_stream.py
@@ -158,8 +168,7 @@ VoxShield-AI/
 │   ├── detector.py            # Model wrapper
 │   ├── signal_checks.py       # 4 acoustic analyzers
 │   ├── ensemble.py            # Weighted scoring
-│   ├── voiceprint.py          # De-cloaking fingerprint
-│   └── voiceprint.py          # Experimental correlation features
+│   └── voiceprint.py          # 128-dim voiceprint feature extraction
 ├── data/
 │   ├── demo/                  # Quick demo audio
 │   ├── real/                  # Real voice samples

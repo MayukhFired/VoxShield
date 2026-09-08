@@ -51,10 +51,8 @@ async def decloak_voice(
         if detection_result.get("verdict") == "error":
             raise HTTPException(status_code=400, detail=detection_result.get("error", "Analysis failed"))
 
-        # A voiceprint is sensitive biometric data. Do not derive or persist it
-        # for authentic speech; fake-audio correlation additionally requires an
-        # explicit consent flag from the reporter.
-        if detection_result["verdict"] != "fake" or not consent_to_store:
+        # A voiceprint is sensitive biometric data and requires explicit consent to derive/store.
+        if not consent_to_store:
             return JSONResponse(content={
                 "detection": {
                     "verdict": detection_result["verdict"],
@@ -68,11 +66,7 @@ async def decloak_voice(
                 "summary": {
                     "headline": "No voiceprint was stored",
                     "threat_level": "low" if detection_result["verdict"] == "real" else "medium",
-                    "description": (
-                        "This sample appears authentic, so voiceprint correlation was not run."
-                        if detection_result["verdict"] == "real"
-                        else "Synthetic indicators were found, but experimental voiceprint correlation requires explicit consent."
-                    ),
+                    "description": "Experimental voiceprint extraction requires explicit consent to store data.",
                 },
             })
 
@@ -174,12 +168,15 @@ def _build_summary(detection: dict, voiceprint: dict, matches: list, store_resul
         headline = "KNOWN SCAMMER IDENTIFIED — Voice matches previous cases"
         threat_level = "critical"
         top_match = matches[0]
+        linked_list = top_match.get("linked_numbers") or []
+        linked_str = ", ".join(linked_list[:3]) if isinstance(linked_list, list) and linked_list else "unknown"
         description = (
             f"This scammer's underlying voice matches a known profile "
             f"(ID: {top_match['voiceprint_id']}) with {top_match['similarity']:.0%} similarity. "
             f"They have been seen {top_match['times_seen']} time(s) before, "
-            f"linked to numbers: {', '.join(top_match['linked_numbers'][:3]) or 'unknown'}."
+            f"linked to numbers: {linked_str}."
         )
+
     elif matches:
         headline = "POTENTIAL MATCH — Similar voiceprint found in database"
         threat_level = "high"

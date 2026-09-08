@@ -14,6 +14,14 @@ def get_connection():
     return conn
 
 
+def row_to_dict(row) -> dict:
+    """Safely convert a sqlite3.Row object to a Python dictionary across Python versions."""
+    if row is None:
+        return {}
+    return dict(zip(row.keys(), row))
+
+
+
 def init_db():
     """Initialize the database schema."""
     conn = get_connection()
@@ -66,7 +74,7 @@ async def add_report(phone_number: str, confidence_score: float, notes: Optional
         
         # Check if number already exists in blacklist
         cursor.execute(
-            "SELECT id, reports_count, avg_confidence FROM blacklisted_numbers WHERE phone_number = ?",
+            "SELECT id, reports_count, avg_confidence, status FROM blacklisted_numbers WHERE phone_number = ?",
             (phone_number,)
         )
         existing = cursor.fetchone()
@@ -101,11 +109,16 @@ async def add_report(phone_number: str, confidence_score: float, notes: Optional
         )
         entry = cursor.fetchone()
         
+        entry_dict = row_to_dict(entry)
         return {
             "success": True,
             "message": f"Number {phone_number} reported successfully",
-            "entry": dict(entry)
+            "entry": entry_dict,
         }
+
+
+
+
     
     finally:
         conn.close()
@@ -164,7 +177,7 @@ async def get_blacklist_page(page: int = 1, page_size: int = 20, sort_by: str = 
             f"SELECT * FROM blacklisted_numbers {where_clause} ORDER BY {sort_by} DESC LIMIT ? OFFSET ?",
             (*params, page_size, offset)
         )
-        entries = [dict(row) for row in cursor.fetchall()]
+        entries = [row_to_dict(row) for row in cursor.fetchall()]
         
         return {
             "entries": entries,
@@ -188,7 +201,7 @@ async def search_blacklist(query: str):
             "SELECT * FROM blacklisted_numbers WHERE phone_number LIKE ? AND status = 'confirmed' ORDER BY reports_count DESC LIMIT 20",
             (f"%{query}%",)
         )
-        entries = [dict(row) for row in cursor.fetchall()]
+        entries = [row_to_dict(row) for row in cursor.fetchall()]
         
         return {
             "results": entries,
@@ -213,7 +226,8 @@ async def confirm_blacklist_number(phone_number: str) -> Optional[dict]:
         if cursor.rowcount == 0:
             return None
         cursor.execute("SELECT * FROM blacklisted_numbers WHERE phone_number = ?", (phone_number,))
-        return dict(cursor.fetchone())
+        return row_to_dict(cursor.fetchone())
+
     finally:
         conn.close()
 
@@ -392,6 +406,7 @@ async def find_similar_voiceprints(fingerprint_vector: list, threshold: float = 
             # Scale to 0-1
             similarity = (similarity + 1) / 2
 
+            linked = json.loads(row["linked_numbers"]) if row["linked_numbers"] else []
             if similarity >= threshold:
                 matches.append({
                     "voiceprint_id": row["id"],
@@ -399,10 +414,11 @@ async def find_similar_voiceprints(fingerprint_vector: list, threshold: float = 
                     "times_seen": row["times_seen"],
                     "first_seen": row["first_seen"],
                     "last_seen": row["last_seen"],
-                    "linked_numbers": json.loads(row["linked_numbers"]),
+                    "linked_numbers": linked if isinstance(linked, list) else [],
                     "status": row["status"],
                     "fingerprint_hash": row["fingerprint_hash"],
                 })
+
 
         # Sort by similarity descending
         matches.sort(key=lambda x: x["similarity"], reverse=True)
@@ -452,7 +468,7 @@ async def get_scammer_profile(voiceprint_id: int) -> Optional[dict]:
             "SELECT * FROM decloak_cases WHERE voiceprint_id = ? ORDER BY timestamp DESC",
             (voiceprint_id,)
         )
-        cases = [dict(c) for c in cursor.fetchall()]
+        cases = [row_to_dict(c) for c in cursor.fetchall()]
 
         return {
             "voiceprint_id": row["id"],

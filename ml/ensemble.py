@@ -102,10 +102,14 @@ class EnsembleDetector:
             weight = self.CHECK_WEIGHTS.get(check["check_name"], 0.25)
             signal_combined += check["score"] * weight
         
-        # Penalty: if majority of checks fail, reduce score further
+        # Penalty: if checks fail, reduce score progressively
         checks_failed = sum(1 for c in signal_results if not c["passed"])
         if checks_failed >= 3:
-            signal_combined *= 0.6  # Strong penalty for multiple failures
+            signal_combined *= 0.50  # Strong penalty for 3+ failures
+        elif checks_failed == 2:
+            signal_combined *= 0.70  # Moderate penalty for 2 failures
+        elif checks_failed == 1:
+            signal_combined *= 0.88  # Slight penalty for 1 failure
         
         # Ensemble weighted score
         ensemble_score = (
@@ -113,17 +117,14 @@ class EnsembleDetector:
             signal_combined * signal_weight
         )
         
-        # Baseline heuristic threshold. It is not a calibrated probability.
-        verdict = "real" if ensemble_score > 0.65 else "fake"
+        # Baseline heuristic threshold.
+        verdict = "real" if ensemble_score > 0.60 else "fake"
         
         # Confidence: how far from threshold, scaled to be meaningful
-        # Confidence represents distance from the heuristic threshold, not accuracy.
         if verdict == "real":
-            # Scale: 0.65→50%, 0.80→75%, 1.0→100%
-            confidence = 0.5 + (ensemble_score - 0.65) * 1.43
+            confidence = 0.5 + (ensemble_score - 0.60) * 1.25
         else:
-            # Scale: 0.65→50%, 0.40→80%, 0.0→100%
-            confidence = 0.5 + (0.65 - ensemble_score) * 1.43
+            confidence = 0.5 + (0.60 - ensemble_score) * 1.25
         confidence = round(min(1.0, max(0.5, confidence)), 4)
         
         # Step 5: Generate spectrogram data for frontend visualization

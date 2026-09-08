@@ -8,7 +8,12 @@ from app.tts import TTSUnavailableError
 client = TestClient(app)
 
 
-def test_tts_is_disabled_by_default():
+def test_tts_is_disabled_when_config_off(monkeypatch):
+    import app.tts
+    class DummySettings:
+        enable_cloud_tts = False
+        tts_timeout_seconds = 5
+    monkeypatch.setattr(app.tts, "settings", DummySettings())
     response = client.post(
         "/api/scamtrap/tts",
         json={"text": "Hello beta, who is this calling?", "persona_id": "elderly_grandma"},

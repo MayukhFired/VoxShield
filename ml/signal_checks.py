@@ -292,7 +292,7 @@ def check_spectral_cutoff(audio: np.ndarray, sr: int = 16000) -> Dict[str, Any]:
         # Score
         score = 1.0 - min(1.0, max(0.0, (dropoff_high_to_very_high - 10) / 30))
         
-        detail = f"Spectral dropoff mid→high: {dropoff_mid_to_high:.1f}dB, high→very_high: {dropoff_high_to_very_high:.1f}dB. "
+        detail = f"Spectral dropoff mid->high: {dropoff_mid_to_high:.1f}dB, high->very_high: {dropoff_high_to_very_high:.1f}dB. "
         if is_natural:
             detail += "Gradual spectral rolloff — consistent with natural speech."
         else:

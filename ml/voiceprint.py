@@ -139,68 +139,71 @@ class VoiceprintExtractor:
         - Pause duration distributions
         - Energy contour dynamics
         """
-        frame_length = int(0.025 * self.sr)
-        hop_length = int(0.010 * self.sr)
+        try:
+            frame_length = int(0.025 * self.sr)
+            hop_length = int(0.010 * self.sr)
 
-        # Energy contour
-        energy = np.array([
-            np.sqrt(np.mean(audio[i:i + frame_length] ** 2))
-            for i in range(0, len(audio) - frame_length, hop_length)
-        ])
+            # Energy contour
+            energy = np.array([
+                np.sqrt(np.mean(audio[i:i + frame_length] ** 2))
+                for i in range(0, len(audio) - frame_length, hop_length)
+            ])
 
-        if len(energy) < 10:
-            return np.zeros(24)
+            if len(energy) < 10:
+                return np.zeros(24)
 
-        # Temporal features
-        features = []
+            # Temporal features
+            features = []
 
-        # Energy statistics
-        features.append(np.mean(energy))
-        features.append(np.std(energy))
-        features.append(np.median(energy))
+            # Energy statistics
+            features.append(np.mean(energy))
+            features.append(np.std(energy))
+            features.append(np.median(energy))
 
-        # Energy delta (rate of change)
-        delta_energy = np.diff(energy)
-        features.append(np.mean(np.abs(delta_energy)))
-        features.append(np.std(delta_energy))
+            # Energy delta (rate of change)
+            delta_energy = np.diff(energy)
+            features.append(np.mean(np.abs(delta_energy)))
+            features.append(np.std(delta_energy))
 
-        # Speech/silence ratio
-        threshold = np.mean(energy) * 0.3
-        speech_frames = np.sum(energy > threshold)
-        features.append(speech_frames / len(energy))
+            # Speech/silence ratio
+            threshold = np.mean(energy) * 0.3
+            speech_frames = np.sum(energy > threshold)
+            features.append(speech_frames / len(energy))
 
-        # Pause analysis
-        is_silence = energy < threshold
-        pause_lengths = []
-        current_pause = 0
-        for s in is_silence:
-            if s:
-                current_pause += 1
+            # Pause analysis
+            is_silence = energy < threshold
+            pause_lengths = []
+            current_pause = 0
+            for s in is_silence:
+                if s:
+                    current_pause += 1
+                else:
+                    if current_pause > 0:
+                        pause_lengths.append(current_pause)
+                    current_pause = 0
+
+            if pause_lengths:
+                features.append(np.mean(pause_lengths))
+                features.append(np.std(pause_lengths))
+                features.append(len(pause_lengths))
             else:
-                if current_pause > 0:
-                    pause_lengths.append(current_pause)
-                current_pause = 0
+                features.extend([0, 0, 0])
 
-        if pause_lengths:
-            features.append(np.mean(pause_lengths))
-            features.append(np.std(pause_lengths))
-            features.append(len(pause_lengths))
-        else:
-            features.extend([0, 0, 0])
+            # Energy autocorrelation (rhythm patterns)
+            if len(energy) > 50:
+                autocorr = np.correlate(energy[:200], energy[:200], mode='full')
+                autocorr = autocorr[len(autocorr) // 2:]
+                autocorr = autocorr / (autocorr[0] + 1e-10)
+                features.extend(autocorr[1:16].tolist())
+            else:
+                features.extend([0] * 15)
 
-        # Energy autocorrelation (rhythm patterns)
-        if len(energy) > 50:
-            autocorr = np.correlate(energy[:200], energy[:200], mode='full')
-            autocorr = autocorr[len(autocorr) // 2:]
-            autocorr = autocorr / (autocorr[0] + 1e-10)
-            features.extend(autocorr[1:16].tolist())
-        else:
-            features.extend([0] * 15)
-
-        result = np.array(features[:24])
-        if len(result) < 24:
-            result = np.pad(result, (0, 24 - len(result)))
-        return result
+            result = np.array(features[:24])
+            if len(result) < 24:
+                result = np.pad(result, (0, 24 - len(result)))
+            return result
+        except Exception:
+            return np.zeros(24)
 
     def _extract_residual_pitch(self, audio: np.ndarray) -> np.ndarray:
         """
@@ -208,58 +211,61 @@ class VoiceprintExtractor:
         VC systems modify the mean pitch but don't perfectly transform the
         micro-level pitch dynamics of the source speaker.
         """
-        # Extract F0
-        f0, voiced_flag, _ = librosa.pyin(
-            audio, fmin=50, fmax=500, sr=self.sr, frame_length=2048
-        )
+        try:
+            # Extract F0
+            f0, voiced_flag, _ = librosa.pyin(
+                audio, fmin=50, fmax=500, sr=self.sr, frame_length=2048
+            )
 
-        voiced_f0 = f0[voiced_flag] if voiced_flag is not None else f0[~np.isnan(f0)]
+            voiced_f0 = f0[voiced_flag] if (voiced_flag is not None and np.any(voiced_flag)) else f0[~np.isnan(f0)]
 
-        if len(voiced_f0) < 10:
+            if len(voiced_f0) < 10:
+                return np.zeros(32)
+
+            features = []
+
+            # Pitch statistics (relative, not absolute — survives VC)
+            mean_f0 = np.mean(voiced_f0)
+            features.append(np.std(voiced_f0) / (mean_f0 + 1e-10))  # Coefficient of variation
+            features.append(np.median(voiced_f0) / (mean_f0 + 1e-10))
+
+            # Pitch delta patterns (how pitch changes — speaker-specific)
+            pitch_delta = np.diff(voiced_f0)
+            features.append(np.mean(np.abs(pitch_delta)) / (mean_f0 + 1e-10))
+            features.append(np.std(pitch_delta) / (mean_f0 + 1e-10))
+
+            # Pitch acceleration (second derivative)
+            if len(pitch_delta) > 2:
+                pitch_accel = np.diff(pitch_delta)
+                features.append(np.mean(np.abs(pitch_accel)) / (mean_f0 + 1e-10))
+                features.append(np.std(pitch_accel) / (mean_f0 + 1e-10))
+            else:
+                features.extend([0, 0])
+
+            # Pitch range ratio
+            features.append((np.max(voiced_f0) - np.min(voiced_f0)) / (mean_f0 + 1e-10))
+
+            # Jitter and shimmer (micro-perturbation — source speaker dependent)
+            diffs = np.abs(np.diff(voiced_f0))
+            jitter = np.mean(diffs) / (mean_f0 + 1e-10)
+            features.append(jitter)
+
+            # Pitch contour autocorrelation (speaking style fingerprint)
+            if len(voiced_f0) > 30:
+                normalized_f0 = (voiced_f0 - mean_f0) / (np.std(voiced_f0) + 1e-10)
+                autocorr = np.correlate(normalized_f0[:100], normalized_f0[:100], mode='full')
+                autocorr = autocorr[len(autocorr) // 2:]
+                autocorr = autocorr / (autocorr[0] + 1e-10)
+                features.extend(autocorr[1:25].tolist())
+            else:
+                features.extend([0] * 24)
+
+            result = np.array(features[:32])
+            if len(result) < 32:
+                result = np.pad(result, (0, 32 - len(result)))
+            return result
+        except Exception:
             return np.zeros(32)
-
-        features = []
-
-        # Pitch statistics (relative, not absolute — survives VC)
-        mean_f0 = np.mean(voiced_f0)
-        features.append(np.std(voiced_f0) / (mean_f0 + 1e-10))  # Coefficient of variation
-        features.append(np.median(voiced_f0) / (mean_f0 + 1e-10))
-
-        # Pitch delta patterns (how pitch changes — speaker-specific)
-        pitch_delta = np.diff(voiced_f0)
-        features.append(np.mean(np.abs(pitch_delta)) / (mean_f0 + 1e-10))
-        features.append(np.std(pitch_delta) / (mean_f0 + 1e-10))
-
-        # Pitch acceleration (second derivative)
-        if len(pitch_delta) > 2:
-            pitch_accel = np.diff(pitch_delta)
-            features.append(np.mean(np.abs(pitch_accel)) / (mean_f0 + 1e-10))
-            features.append(np.std(pitch_accel) / (mean_f0 + 1e-10))
-        else:
-            features.extend([0, 0])
-
-        # Pitch range ratio
-        features.append((np.max(voiced_f0) - np.min(voiced_f0)) / (mean_f0 + 1e-10))
-
-        # Jitter and shimmer (micro-perturbation — source speaker dependent)
-        diffs = np.abs(np.diff(voiced_f0))
-        jitter = np.mean(diffs) / (mean_f0 + 1e-10)
-        features.append(jitter)
-
-        # Pitch contour autocorrelation (speaking style fingerprint)
-        if len(voiced_f0) > 30:
-            normalized_f0 = (voiced_f0 - mean_f0) / (np.std(voiced_f0) + 1e-10)
-            autocorr = np.correlate(normalized_f0[:100], normalized_f0[:100], mode='full')
-            autocorr = autocorr[len(autocorr) // 2:]
-            autocorr = autocorr / (autocorr[0] + 1e-10)
-            features.extend(autocorr[1:25].tolist())
-        else:
-            features.extend([0] * 24)
-
-        result = np.array(features[:32])
-        if len(result) < 32:
-            result = np.pad(result, (0, 32 - len(result)))
-        return result
 
     def _extract_formant_ratios(self, audio: np.ndarray) -> np.ndarray:
         """

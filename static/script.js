@@ -1,4 +1,4 @@
-/* VoxShield AI — Clean, Minimal Frontend Logic */
+/* VoxShield AI -- Clean, Minimal Frontend Logic */
 
 const API = "";
 
@@ -26,7 +26,9 @@ function escapeHTML(value) {
         audioPlayer.src = URL.createObjectURL(file);
         audioPlayer.style.display = "block";
         analyzeBtn.style.display = "inline-flex";
-        uploadArea.querySelector(".upload-text").textContent = file.name;
+        if (uploadArea.querySelector(".upload-text")) {
+            uploadArea.querySelector(".upload-text").textContent = file.name;
+        }
     });
 
     // Drag and drop
@@ -72,12 +74,19 @@ async function analyzeAudio() {
 
     try {
         const res = await fetch(API + "/api/detect", { method: "POST", body: formData });
-        if (!res.ok) throw new Error((await res.json()).detail || "Failed");
-        const data = await res.json();
+        let data;
+        try {
+            data = await res.json();
+        } catch (e) {
+            throw new Error("Server returned an invalid response (Status " + res.status + "). Make sure backend is running.");
+        }
+        if (!res.ok) throw new Error(data.detail || ("Server error (" + res.status + ")"));
         showResult(data, resultDiv, specWrap, checksDiv);
     } catch (err) {
         resultDiv.style.display = "block";
         resultDiv.innerHTML = '<div class="card" style="border-color:rgba(239,68,68,0.3);"><p style="color:#ef4444;">Error: ' + escapeHTML(err.message) + '</p></div>';
+        if (specWrap) specWrap.style.display = "none";
+        if (checksDiv) checksDiv.innerHTML = "";
     } finally {
         btn.textContent = "Analyze this voice";
         btn.disabled = false;
@@ -122,6 +131,14 @@ window.runDemoSample = runDemoSample;
 ========================= */
 
 function showResult(data, resultDiv, specWrap, checksDiv) {
+    if (data.verdict === "error") {
+        resultDiv.style.display = "block";
+        resultDiv.innerHTML = '<div class="card" style="border-color:rgba(239,68,68,0.3);"><p style="color:#ef4444;">Analysis Error: ' + escapeHTML(data.error || "Could not analyze audio file.") + '</p></div>';
+        if (specWrap) specWrap.style.display = "none";
+        if (checksDiv) checksDiv.innerHTML = "";
+        return;
+    }
+
     const isFake = data.verdict === "fake";
 
     // Big verdict
@@ -135,7 +152,7 @@ function showResult(data, resultDiv, specWrap, checksDiv) {
         '</div>';
 
     // Spectrogram
-    if (specWrap && data.spectrogram && data.spectrogram.data.length > 0) {
+    if (specWrap && data.spectrogram && data.spectrogram.data && data.spectrogram.data.length > 0) {
         specWrap.style.display = "block";
         renderSpectrogram(document.getElementById("spectrogramCanvas"), data.spectrogram);
     }
@@ -156,7 +173,7 @@ function showResult(data, resultDiv, specWrap, checksDiv) {
 ========================= */
 
 function renderSpectrogram(canvas, spec) {
-    if (!canvas || !spec.data.length) return;
+    if (!canvas || !spec.data || !spec.data.length) return;
     const ctx = canvas.getContext("2d");
     const nMels = spec.n_mels;
     const nFrames = spec.n_frames;
@@ -189,9 +206,8 @@ window.addEventListener("beforeinstallprompt", function(e) {
 });
 
 
-
 /* =========================
-   BLACKLIST — Search & Report
+   BLACKLIST -- Search & Report
 ========================= */
 
 (function() {
@@ -212,7 +228,7 @@ window.addEventListener("beforeinstallprompt", function(e) {
                 const res = await fetch(API + "/api/blacklist/check/" + encodeURIComponent(q));
                 const data = await res.json();
                 if (data.is_blacklisted) {
-                    showResult("⚠️ Number found — " + data.status.toUpperCase() + " (reported " + data.reports_count + " times)", "danger");
+                    showResult("⚠️ Number found -- " + data.status.toUpperCase() + " (reported " + data.reports_count + " times)", "danger");
                 } else {
                     showResult("✓ Number is clean. Not found in database.", "safe");
                 }
