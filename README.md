@@ -1,4 +1,4 @@
-# 🛡️ VoxShield AI — AI-Powered Voice Cloning Detection & Prevention
+# 🛡️ VOXSHIELD AI — AI-Powered Voice Cloning Detection & Prevention
 
 > **Detect. Verify. Protect.**
 
