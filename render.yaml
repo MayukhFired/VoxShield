@@ -1,0 +1,23 @@
+# Render Blueprint — deploys the FastAPI app together with its static PWA frontend.
+# PyTorch is intentionally NOT a dependency: the signal-analysis baseline runs
+# without it, and torch exceeded the free tier's 512 MB RAM and OOM-killed the
+# service on every analysis request.
+services:
+  - type: web
+    name: voxshield
+    runtime: python
+    plan: free
+    region: singapore
+    rootDir: backend
+    buildCommand: pip install -r requirements-deploy.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: VOXSHIELD_ENV
+        value: production
+      - key: VOXSHIELD_ENABLE_CLOUD_TTS
+        value: "false"
+      - key: VOXSHIELD_ALLOWED_ORIGINS
+        value: https://voxshield-5.onrender.com
+      - key: VOXSHIELD_ADMIN_TOKEN
+        generateValue: true
