@@ -215,6 +215,13 @@ See [privacy and retention requirements](docs/PRIVACY.md) and the
 
 ## Team
 
+Member 1 : Mayukh Ghosh
+Member 2 : Manpreet Singh
+Member 3 : Akash Prasad
+Member 4 : Ananya Nayak
+Member 5 : Adarsh Chaubey
+Member 6 : Anirban Pachhal
+
 Built for **Smart India Hackathon 2025 / CodeSprint 3.0**
 
 © 2025 VoxShield AI — All Rights Reserved
