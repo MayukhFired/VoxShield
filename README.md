@@ -224,4 +224,4 @@ Member 6 : Anirban Pachhal
 
 Built for **Smart India Hackathon 2025 / CodeSprint 3.0**
 
-© 2025 VoxShield AI — All Rights Reserved
+© 2025 VoxShield AI — Licensed under the MIT License (see [LICENSE](LICENSE)).
