@@ -8,9 +8,10 @@ services:
     runtime: python
     plan: free
     region: singapore
-    rootDir: backend
+    # No rootDir: requirements-deploy.txt lives at the repo root; the app itself
+    # lives in backend/, so the start command runs uvicorn from there.
     buildCommand: pip install -r requirements-deploy.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: VOXSHIELD_ENV
@@ -18,6 +19,6 @@ services:
       - key: VOXSHIELD_ENABLE_CLOUD_TTS
         value: "false"
       - key: VOXSHIELD_ALLOWED_ORIGINS
-        value: https://voxshield-5.onrender.com
+        value: https://voxshield-6.onrender.com
       - key: VOXSHIELD_ADMIN_TOKEN
         generateValue: true
