@@ -26,9 +26,8 @@ def get_demo_result(sample_name: str):
     if not os.path.exists(file_path):
         return None
 
-    from ml.ensemble import EnsembleDetector
-    detector = EnsembleDetector()
-    result = detector.analyze(file_path)
+    from ml.space_detector import get_detector
+    result = get_detector().analyze(file_path)
     result["sample_name"] = sample_name
 
     _cached_results[sample_name] = result

@@ -147,8 +147,8 @@ function showResult(data, resultDiv, specWrap, checksDiv) {
         '<div class="verdict ' + (isFake ? 'verdict-danger' : 'verdict-safe') + '">' +
             '<div class="verdict-icon">' + (isFake ? '⚠️' : '✓') + '</div>' +
             '<div class="verdict-label">' + (isFake ? 'Potential Synthetic Voice' : 'Potentially Natural Voice') + '</div>' +
-            '<div class="verdict-sub">' + (isFake ? 'This baseline found acoustic indicators associated with synthetic audio.' : 'This baseline found acoustic patterns consistent with natural speech.') + '</div>' +
-            '<div class="verdict-confidence" style="color:' + (isFake ? '#ef4444' : '#22c55e') + ';">' + Math.round(data.confidence * 100) + '% heuristic score</div>' +
+            '<div class="verdict-sub">' + (isFake ? 'The classifier read this voice as synthetic.' : 'The classifier read this voice as human speech.') + '</div>' +
+            '<div class="verdict-confidence" style="color:' + (isFake ? '#ef4444' : '#22c55e') + ';">' + Math.round(data.confidence * 100) + '% model confidence</div>' +
         '</div>';
 
     // Spectrogram
@@ -158,12 +158,23 @@ function showResult(data, resultDiv, specWrap, checksDiv) {
     }
 
     // Signal checks
-    if (checksDiv && data.signal_checks) {
-        checksDiv.innerHTML = '<div class="checks">' +
-            data.signal_checks.map(function(c) {
-                return '<div class="check"><div class="check-dot ' + (c.passed ? 'pass' : 'fail') + '"></div><div class="check-label">' + c.check_name.replace(/_/g, ' ') + '</div></div>';
-            }).join('') +
-        '</div>';
+    if (checksDiv) {
+        if (data.signal_checks && data.signal_checks.length) {
+            checksDiv.innerHTML = '<div class="checks">' +
+                data.signal_checks.map(function(c) {
+                    return '<div class="check"><div class="check-dot ' + (c.passed ? 'pass' : 'fail') + '"></div><div class="check-label">' + c.check_name.replace(/_/g, ' ') + '</div></div>';
+                }).join('') +
+            '</div>';
+        } else {
+            const summary = data.signal_summary || {};
+            const pFake = typeof summary.p_fake === "number" ? summary.p_fake : data.p_fake;
+            const seconds = typeof data.analyzed_seconds === "number" ? data.analyzed_seconds.toFixed(1) : "-";
+            checksDiv.innerHTML = '<div class="checks">' +
+                '<div class="check"><div class="check-dot ' + (isFake ? 'fail' : 'pass') + '"></div><div class="check-label">synthetic probability ' + (typeof pFake === "number" ? pFake.toFixed(3) : "n/a") + '</div></div>' +
+                '<div class="check"><div class="check-dot pass"></div><div class="check-label">analysed ' + seconds + 's of speech</div></div>' +
+                '<div class="check"><div class="check-dot pass"></div><div class="check-label">model wav2vec2 spoof detector</div></div>' +
+            '</div>';
+        }
     }
 }
 

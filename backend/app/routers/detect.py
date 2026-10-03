@@ -1,25 +1,12 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Request
 from fastapi.responses import JSONResponse
 import os
-from threading import Lock
 from starlette.concurrency import run_in_threadpool
 from app.security import enforce_rate_limit
 from app.uploads import save_audio_upload
+from ml.space_detector import get_detector
 
 router = APIRouter()
-_detector = None
-_detector_lock = Lock()
-
-
-def get_detector():
-    """Reuse the model and avoid reloading weights for every upload."""
-    global _detector
-    if _detector is None:
-        with _detector_lock:
-            if _detector is None:
-                from ml.ensemble import EnsembleDetector
-                _detector = EnsembleDetector()
-    return _detector
 
 
 @router.post("/detect")
@@ -37,8 +24,8 @@ async def detect_voice(request: Request, file: UploadFile = File(...)):
         import json
 
         detector = get_detector()
-        # librosa/PyTorch work is CPU-bound; keep the async event loop available
-        # for other requests while it runs.
+        # The call blocks on audio loading plus a round trip to the detection
+        # service; run it off the event loop so other requests stay served.
         result = await run_in_threadpool(detector.analyze, temp_path)
         
         # Ensure all values are JSON serializable (convert numpy types)

@@ -44,8 +44,8 @@ async def decloak_voice(
         temp_path = await save_audio_upload(file)
 
         # Step 1: Run detection
-        from ml.ensemble import EnsembleDetector
-        detector = EnsembleDetector()
+        from ml.space_detector import get_detector
+        detector = get_detector()
         detection_result = await run_in_threadpool(detector.analyze, temp_path)
 
         if detection_result.get("verdict") == "error":

@@ -40,15 +40,18 @@ app.include_router(websocket_stream.router, tags=["WebSocket"])
 
 @app.on_event("startup")
 def warm_analysis_engine():
-    """Import librosa and prime demo results before any traffic arrives.
+    """Open the detection service and prime demo results before traffic arrives.
 
-    On low-CPU hosts (Render free tier) the first librosa import plus analysis
-    takes minutes; done lazily inside a request it blocks the event loop and
-    the platform returns 502s for every endpoint until it finishes.
+    Waking a sleeping Hugging Face Space inside the first request costs more
+    than the platform's request budget, so it happens here instead. Failure is
+    not fatal: the first real request simply retries.
     """
-    detect.get_detector()
-    for sample in demo.DEMO_SAMPLES:
-        demo.get_demo_result(sample["filename"])
+    try:
+        detect.get_detector()
+        for sample in demo.DEMO_SAMPLES:
+            demo.get_demo_result(sample["filename"])
+    except Exception as exc:
+        print(f"WARMUP FAILED, will retry per request: {exc}", flush=True)
 
 # Static frontend directory
 STATIC_DIR = os.path.join(PROJECT_ROOT, "static")

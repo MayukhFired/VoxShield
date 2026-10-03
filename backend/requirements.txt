@@ -2,8 +2,12 @@ fastapi>=0.104,<1.0
 uvicorn[standard]>=0.24,<1.0
 python-multipart>=0.0.6
 websockets>=12.0
-# The baseline detector does not require PyTorch. Keeping it optional lets the
-# API run on Python 3.13 while a separately validated model package is absent.
+# Classification runs in the Hugging Face Space; this API only relays to it,
+# so torch stays out of this install and the free-tier RAM limit holds.
+gradio_client>=1.3,<2.0
+# gradio_client pulls huggingface-hub, and 1.x demands click>=8.4 while
+# gtts==2.5.4 caps click<8.2. Staying below 1.0 keeps both installable.
+huggingface-hub<1.0
 librosa>=0.10.2,<0.12
 numpy>=1.26,<2.4
 scipy>=1.11,<1.17

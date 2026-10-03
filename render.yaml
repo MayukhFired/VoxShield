@@ -1,7 +1,7 @@
 # Render Blueprint — deploys the FastAPI app together with its static PWA frontend.
-# PyTorch is intentionally NOT a dependency: the signal-analysis baseline runs
-# without it, and torch exceeded the free tier's 512 MB RAM and OOM-killed the
-# service on every analysis request.
+# PyTorch is intentionally NOT a dependency here: the wav2vec2 classifier runs in
+# the Hugging Face Space below, and torch exceeded this tier's 512 MB RAM and
+# OOM-killed the service on every analysis request.
 services:
   - type: web
     name: voxshield
@@ -16,6 +16,11 @@ services:
     envVars:
       - key: VOXSHIELD_ENV
         value: production
+      # Where the real classifier lives. Every /api/detect, /api/demo and
+      # /api/decloak call is relayed here; unset, the app falls back to the
+      # heuristic detector that measures file encoding rather than spoofing.
+      - key: VOXSHIELD_SPACE_URL
+        value: https://mayukhfired-voxshield.hf.space
       - key: VOXSHIELD_ENABLE_CLOUD_TTS
         value: "false"
       - key: VOXSHIELD_ALLOWED_ORIGINS
