@@ -1,5 +1,6 @@
---extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.13.0+cpu
+# ZeroGPU rejects any torch outside 2.8.0-2.13.0, and its parser does not
+# accept a local version suffix, so this must stay a bare "torch==2.13.0".
+torch==2.13.0
 transformers==5.18.0
 librosa==0.11.0
 soundfile==0.13.1
