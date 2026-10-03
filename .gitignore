@@ -26,6 +26,15 @@ ml/models/*.bin
 .env
 .env.local
 
+# Hugging Face write token used to push the Space — never commit this
+hf-space/HF_TOKEN*
+
+# Benchmark scratch: downloaded audio, model caches, result CSVs
+.eval/
+
+# Throwaway files used to probe a running deployment
+.deploy-test/
+
 # IDE
 .vscode/
 .idea/
