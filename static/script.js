@@ -143,9 +143,10 @@ function showResult(data, resultDiv, specWrap, checksDiv) {
     const summary = data.signal_summary || {};
     const pFake = typeof summary.p_fake === "number" ? summary.p_fake : data.p_fake;
     // English human voices score ~0.00002 here, but a measured Hindi human voice
-    // scored 0.421 — the classifier is not separated from the 0.50 line outside
-    // its training language. Reporting that as "natural" or "synthetic" would be
-    // a guess dressed up as a finding, so the UI says it cannot tell.
+    // scored 0.421 while a Tamil human voice scored 0.000026 — the confidence loss
+    // tracks the recording (bandwidth, noise, channel) rather than the language.
+    // Reporting a near-line score as "natural" or "synthetic" would be a guess
+    // dressed up as a finding, so the UI says it cannot tell.
     const inconclusive = typeof pFake === "number" && pFake >= 0.35 && pFake <= 0.65;
 
     resultDiv.style.display = "block";
