@@ -161,7 +161,6 @@
         <nav>
             <a href="/">Home</a>
             <a href="/#detect">Detect</a>
-            <a href="/#live">Live Mic</a>
             <a href="/blacklist.html">Blacklist</a>
             <a href="/decloak.html">De-Cloak</a>
         </nav>
@@ -529,11 +528,16 @@
         const container = document.getElementById("detectionDetails");
         const v = detection.verdict;
         const c = detection.confidence;
-        const color = v === "fake" ? "#ef4444" : "#22c55e";
+        const pFake = detection.signal_summary && typeof detection.signal_summary.p_fake === "number"
+            ? detection.signal_summary.p_fake : null;
+        const inconclusive = pFake !== null && pFake >= 0.35 && pFake <= 0.65;
+        const color = inconclusive ? "#f59e0b" : (v === "fake" ? "#ef4444" : "#22c55e");
 
         let html = '<div style="display:flex;align-items:center;gap:15px;margin-bottom:15px;">' +
-            '<div style="font-size:1.5rem;font-weight:900;color:' + color + ';">' + v.toUpperCase() + '</div>' +
-            '<div style="color:#94a3b8;">Confidence: ' + Math.round(c * 100) + '%</div>' +
+            '<div style="font-size:1.5rem;font-weight:900;color:' + color + ';">' + (inconclusive ? "INCONCLUSIVE" : v.toUpperCase()) + '</div>' +
+            '<div style="color:#94a3b8;">' + (inconclusive
+                ? 'Synthetic probability ' + pFake.toFixed(3) + ' sits on the decision line — treat it as unknown, not as a verdict.'
+                : 'Confidence: ' + Math.round(c * 100) + '%') + '</div>' +
             '</div>';
 
         if (detection.signal_checks) {

@@ -140,16 +140,32 @@ function showResult(data, resultDiv, specWrap, checksDiv) {
     }
 
     const isFake = data.verdict === "fake";
+    const summary = data.signal_summary || {};
+    const pFake = typeof summary.p_fake === "number" ? summary.p_fake : data.p_fake;
+    // English human voices score ~0.00002 here, but a measured Hindi human voice
+    // scored 0.421 — the classifier is not separated from the 0.50 line outside
+    // its training language. Reporting that as "natural" or "synthetic" would be
+    // a guess dressed up as a finding, so the UI says it cannot tell.
+    const inconclusive = typeof pFake === "number" && pFake >= 0.35 && pFake <= 0.65;
 
-    // Big verdict
     resultDiv.style.display = "block";
-    resultDiv.innerHTML =
-        '<div class="verdict ' + (isFake ? 'verdict-danger' : 'verdict-safe') + '">' +
-            '<div class="verdict-icon">' + (isFake ? '⚠️' : '✓') + '</div>' +
-            '<div class="verdict-label">' + (isFake ? 'Potential Synthetic Voice' : 'Potentially Natural Voice') + '</div>' +
-            '<div class="verdict-sub">' + (isFake ? 'The classifier read this voice as synthetic.' : 'The classifier read this voice as human speech.') + '</div>' +
-            '<div class="verdict-confidence" style="color:' + (isFake ? '#ef4444' : '#22c55e') + ';">' + Math.round(data.confidence * 100) + '% model confidence</div>' +
-        '</div>';
+    if (inconclusive) {
+        resultDiv.innerHTML =
+            '<div class="verdict" style="border-color:rgba(245,158,11,0.35);">' +
+                '<div class="verdict-icon">?</div>' +
+                '<div class="verdict-label">Inconclusive</div>' +
+                '<div class="verdict-sub">The classifier could not separate this voice confidently. That happens with some voices and some recordings — treat the result as unknown, not as a verdict either way.</div>' +
+                '<div class="verdict-confidence" style="color:#f59e0b;">' + pFake.toFixed(3) + ' synthetic probability</div>' +
+            '</div>';
+    } else {
+        resultDiv.innerHTML =
+            '<div class="verdict ' + (isFake ? 'verdict-danger' : 'verdict-safe') + '">' +
+                '<div class="verdict-icon">' + (isFake ? '⚠️' : '✓') + '</div>' +
+                '<div class="verdict-label">' + (isFake ? 'Potential Synthetic Voice' : 'Potentially Natural Voice') + '</div>' +
+                '<div class="verdict-sub">' + (isFake ? 'The classifier read this voice as synthetic.' : 'The classifier read this voice as human speech.') + '</div>' +
+                '<div class="verdict-confidence" style="color:' + (isFake ? '#ef4444' : '#22c55e') + ';">' + Math.round(data.confidence * 100) + '% model confidence</div>' +
+            '</div>';
+    }
 
     // Spectrogram
     if (specWrap && data.spectrogram && data.spectrogram.data && data.spectrogram.data.length > 0) {
@@ -166,11 +182,12 @@ function showResult(data, resultDiv, specWrap, checksDiv) {
                 }).join('') +
             '</div>';
         } else {
-            const summary = data.signal_summary || {};
-            const pFake = typeof summary.p_fake === "number" ? summary.p_fake : data.p_fake;
             const seconds = typeof data.analyzed_seconds === "number" ? data.analyzed_seconds.toFixed(1) : "-";
+            const scoreLabel = inconclusive
+                ? 'margin to decision line ' + Math.abs(pFake - 0.5).toFixed(3)
+                : 'synthetic probability ' + (typeof pFake === "number" ? pFake.toFixed(3) : "n/a");
             checksDiv.innerHTML = '<div class="checks">' +
-                '<div class="check"><div class="check-dot ' + (isFake ? 'fail' : 'pass') + '"></div><div class="check-label">synthetic probability ' + (typeof pFake === "number" ? pFake.toFixed(3) : "n/a") + '</div></div>' +
+                '<div class="check"><div class="check-dot ' + (isFake || inconclusive ? 'fail' : 'pass') + '"></div><div class="check-label">' + scoreLabel + '</div></div>' +
                 '<div class="check"><div class="check-dot pass"></div><div class="check-label">analysed ' + seconds + 's of speech</div></div>' +
                 '<div class="check"><div class="check-dot pass"></div><div class="check-label">model wav2vec2 spoof detector</div></div>' +
             '</div>';

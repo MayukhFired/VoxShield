@@ -7,7 +7,7 @@ from fastapi import HTTPException, UploadFile
 
 from app.config import settings
 
-ALLOWED_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".webm", ".aac", ".opus", ".3gp", ".wma", ".aiff", ".mp4"}
+ALLOWED_EXTENSIONS = {".wav", ".mp3", ".flac", ".ogg", ".oga", ".m4a", ".webm", ".aac", ".opus", ".3gp", ".wma", ".aiff", ".mp4"}
 
 
 async def save_audio_upload(upload: UploadFile) -> str:
