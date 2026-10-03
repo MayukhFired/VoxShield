@@ -1,8 +1,9 @@
 """VoxShield AI — public detector demo.
 
-Runs the wav2vec2 spoofing classifier that replaced the shipped heuristics.
-Deliberately no @spaces.GPU anywhere: inference is CPU-only, so this Space
-never consumes ZeroGPU quota.
+Runs the wav2vec2 spoofing classifier on CPU. ZeroGPU refuses to serve a Space
+that declares no @spaces.GPU function at all, so one trivially cheap decorated
+function exists purely as a platform requirement; detection never calls it, and
+therefore never consumes the free 5-minute daily GPU quota.
 """
 
 import os
@@ -11,6 +12,12 @@ import gradio as gr
 import librosa
 import torch
 from transformers import AutoFeatureExtractor, AutoModelForAudioClassification
+
+try:
+    from spaces import GPU as gpu  # only present on Hugging Face Spaces
+except ImportError:
+    def gpu(**_kwargs):
+        return lambda fn: fn
 
 MODEL_ID = os.getenv("VOXSHIELD_MODEL", "AI-Yoru/wav2vec2-spoof-detector")
 MAX_SECONDS = 10.0
@@ -24,6 +31,11 @@ _model = AutoModelForAudioClassification.from_pretrained(MODEL_ID).eval()
 _id2label = {int(k): str(v) for k, v in _model.config.id2label.items()}
 _FAKE_IDX = next(i for i, label in _id2label.items() if label.lower() in FAKE_WORDS)
 _MODEL_SR = int(getattr(_extractor, "sampling_rate", 16000) or 16000)
+
+
+@gpu(duration=1)
+def gpu_allocator_check():
+    return "GPU allocator reachable. Detection itself runs on CPU."
 
 
 def fake_probability(path: str) -> float:
@@ -86,6 +98,11 @@ with gr.Blocks(title="VoxShield AI") as demo:
             out_details = gr.Markdown()
 
     run.click(analyze, inputs=audio_in, outputs=[out_verdict, out_prob, out_details])
+
+    with gr.Accordion("Diagnostics", open=False):
+        check = gr.Button("Check GPU allocator")
+        out_check = gr.Markdown()
+        check.click(gpu_allocator_check, outputs=out_check)
 
 demo.launch(
     theme=gr.themes.Soft(),
